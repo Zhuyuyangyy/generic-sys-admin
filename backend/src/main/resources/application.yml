@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: generic-sys-admin
+  
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/generic_sys_admin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DB_PASSWORD:123456}
+  
+  redis:
+    host: localhost
+    port: 6379
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 3000ms
+  
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.zyy.**.model
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+# JWT配置
+jwt:
+  secret: your-256-bit-secret-key-here-must-be-at-least-32-chars!
+  expiration: 7200
+  refresh-expiration: 604800
+
+# Minimax TTS配置
+minimax:
+  api-url: https://api.minimax.chat
+  app-id: ${MINIMAX_APP_ID:}
+  api-key: ${MINIMAX_API_KEY:}
+  group-id: ${MINIMAX_GROUP_ID:}
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.zyy: DEBUG
+    com.zyy.aspect: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
