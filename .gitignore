@@ -1,0 +1,36 @@
+# 敏感配置（禁止提交）
+backend/src/main/resources/application-dev.yml
+backend/src/main/resources/application-prod.yml
+backend/src/main/resources/.env
+
+# 本地日志和临时文件
+*.log
+*.tmp
+*.swp
+*~
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.class
+
+# 构建产物
+backend/target/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# 环境密钥相关
+.env
+.env.local
+.env.*.local
+
+# Docker 相关
+docker-compose.override.yml
+
+# 其他
+*.bak
+*.log
+stderr.log
+stdout.log
