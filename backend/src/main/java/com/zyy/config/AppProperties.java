@@ -46,8 +46,8 @@ public class AppProperties {
      */
     @Data
     public static class SecurityProperties {
-        /** JWT signing secret key (minimum 256 bits for HS256) */
-        private String jwtSecret = "dev-default-secret-key-please-override-in-production";
+        /** JWT signing secret key (minimum 256 bits for HS256). MUST be set via JWT_SECRET env var in production. */
+        private String jwtSecret;
 
         /** JWT token validity duration in seconds (default: 2 hours) */
         private long jwtExpiration = 7200;

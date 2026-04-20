@@ -1,153 +1,206 @@
-# 通用管理系统母版 (Generic Sys Admin)
+# Generic Sys Admin - 通用管理系统
 
-基于 SpringBoot3 + Vue3 的高复用、易扩展通用管理系统母版，专为软件杯等竞赛设计。
+> 通用设备与耗材管理系统，支持设备管理、耗材管理、AI对话、语音合成等模块。
 
-## 🎯 项目简介
+## 📋 功能模块
 
-本项目为**通用管理系统母版**，提供完整的前后端架构、RBAC权限控制、AOP日志审计、数据可视化大屏等企业级功能。开发人员可在次母版基础上快速构建面向不同业务场景的管理系统。
-
-## 🏗️ 技术架构
-
-| 层级 | 技术选型 |
-|------|---------|
-| 后端 | SpringBoot3 + MyBatis-Plus + JWT + MySQL |
-| 前端 | Vue3 + Element Plus + Pinia + ECharts |
-| 扩展 | Minimax TTS 语音播报 |
-
-## ✨ 五大创新点
-
-1. **基于JWT的无状态RBAC动态权限控制模型**
-2. **融合Minimax TTS的智能语音播报交互**
-3. **基于AOP切面编程的系统级操作日志审计**
-4. **结合ECharts与轻量级3D渲染（WebGL）的动态数据可视化大屏**
-5. **基于响应式原理的跨终端自适应UI架构**
-
-## 📂 目录结构
-
-```
-generic-sys-admin/
-├── sql/                    # 数据库脚本
-├── doc/                    # 项目文档
-│   ├── thesis/            # 毕业论文大纲
-│   ├── ppt/               # 答辩PPT大纲
-│   └── startup/           # 本地启动说明
-├── backend/               # SpringBoot后端
-│   └── src/main/
-│       ├── java/com/zyy/
-│       │   ├── common/    # 统一返回、异常处理
-│       │   ├── security/  # JWT认证
-│       │   ├── aspect/     # AOP日志切面
-│       │   ├── rbac/       # 用户角色菜单实体
-│       │   ├── voice/      # TTS语音
-│       │   └── exception/  # 业务异常
-│       └── resources/
-│           └── application.yml  # 后端配置
-└── frontend/               # Vue3前端
-    └── src/
-        ├── api/            # Axios封装
-        ├── components/     # 通用组件
-        │   └── chart/      # ECharts/Three.js图表
-        └── views/          # 页面
-```
-
-## 🔐 安全提醒
-
-### ⚠️ Minimax API Key 配置
-
-交付源码时，**必须**提醒客户在 `backend/src/main/resources/application.yml` 中填入自己的密钥：
-
-```yaml
-minimax:
-  api-url: https://api.minimax.chat
-  app-id: 你的AppId           # ⚠️ 替换为实际值
-  api-key: ${MINIMAX_API_KEY} # ⚠️ 通过环境变量注入，不要硬编码！
-  group-id: ${MINIMAX_GROUP_ID} # ⚠️ 同上
-```
-
-切勿将真实的 `api-key` 提交到代码仓库！
-
-## 🚀 快速启动
-
-详细步骤请参考 [本地启动说明](doc/startup/本地启动说明.md)
-
-## 🌐 部署说明
-
-### 开发环境
-前端 Vite 已配置 `/api` 代理到 `http://localhost:8080`，前端直接用 `npm run dev` 启动即可。
-
-### 生产环境 ⚠️（重要）
-前端打包后需要配置 **Nginx 反向代理**，否则会遇到 **403 跨域错误**：
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    # 前端静态文件
-    location / {
-        root /path/to/frontend/dist;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # API 反向代理
-    location /api/ {
-        proxy_pass http://localhost:8080/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
-
-> ⚠️ 如果不配Nginx直接部署dist目录，浏览器会报403！这是最常见的部署售后问题。
-
-## 🎨 3D组件扩展
-
-`frontend/src/components/chart/Echarts3D.vue` 提供了基础的 Three.js 3D地球组件。
-
-如需接入**医疗器械、牙科机器人**等3D模型：
-
-1. 将 `.glb` / `.gltf` 模型文件放入 `frontend/public/models/`
-2. 修改组件中的模型路径即可：
-```javascript
-const loader = new GLTFLoader()
-loader.load('/models/your-dental-robot.glb', (gltf) => {
-    scene.add(gltf.scene)
-})
-```
-
-## 📋 数据库表
-
-| 表名 | 说明 |
+| 模块 | 说明 |
 |------|------|
-| `sys_user` | 用户表 |
-| `sys_role` | 角色表 |
-| `sys_user_role` | 用户角色关联表 |
-| `sys_menu` | 菜单权限表 |
-| `sys_role_menu` | 角色菜单关联表 |
-| `sys_operation_log` | 操作日志表 |
-| `template_entity` | 通用模板实体表 |
+| 🔐 用户管理 | 用户增删改查、角色分配、密码重置 |
+| 📁 角色管理 | RBAC 角色权限体系 |
+| 🏠 菜单管理 | 前端动态菜单配置 |
+| 🔧 设备管理 | 设备信息、状态流转、维护记录 |
+| 📦 耗材管理 | 库存管理、入库/出库、库存预警 |
+| 🤖 AI工作室 | 对话、语音合成（TTS）、多模态 AI |
+| 📝 操作日志 | 完整审计日志 |
 
-## 🔐 默认账号
+## 🏗️ 技术栈
+
+### 后端
+- **Java 17** + **Spring Boot 3.4**
+- **MyBatis-Plus**（ORM）
+- **Spring Security** + **JWT**（认证授权）
+- **Redis**（缓存，Optional）
+- **Knife4j**（API 文档）
+- **Lombok**（简化代码）
+
+### 前端
+- **Vue 3** + **TypeScript**
+- **Vite**（构建工具）
+- **Pinia**（状态管理）
+- **Element Plus**（UI 组件库）
+- **Axios**（HTTP 客户端）
+
+## 🚀 本地开发
+
+### 前置条件
+
+- JDK 17+
+- Maven 3.8+
+- Node.js 18+
+- MySQL 8.0+
+- Redis（可选，无 Redis 时系统自动降级）
+
+### 1. 初始化数据库
+
+```sql
+-- 创建数据库（UTF8MB4）
+CREATE DATABASE generic_sys_admin
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_unicode_ci;
+
+-- 执行初始化脚本
+SOURCE sql/v1.0__init.sql;
+```
+
+### 2. 启动后端
+
+```bash
+cd backend
+
+# 配置数据库密码（可选，有默认值）
+# Windows:
+set DB_PASSWORD=1234
+set DB_HOST=localhost
+
+# Linux/Mac:
+export DB_PASSWORD=1234
+export DB_HOST=localhost
+
+# 启动（开发模式，自动使用 dev profile）
+mvn spring-boot:run
+
+# 或指定 profile
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+后端启动地址：http://localhost:8081
+Knife4j 文档：http://localhost:8081/doc.html
+
+### 3. 启动前端
+
+```bash
+cd frontend
+
+# 安装依赖（首次）
+npm install
+
+# 开发模式
+npm run dev
+
+# 生产构建
+npm run build
+```
+
+前端访问地址：http://localhost:5173
+
+### 4. 登录账号
 
 | 角色 | 用户名 | 密码 |
 |------|--------|------|
-| 超级管理员 | admin | 123456 |
-| 普通用户 | user | 123456 |
+| 管理员 | admin | admin123 |
+| 操作员 | operator | admin123 |
+| 查看者 | viewer | admin123 |
 
-> ⚠️ 正式环境请务必修改默认密码！
+## 🐳 Docker 部署（推荐）
 
-## 📚 相关文档
+### 一键启动
 
-- [毕业论文大纲](doc/thesis/毕业论文大纲.md)
-- [答辩PPT大纲](doc/ppt/答辩PPT大纲.md)
-- [本地启动说明](doc/startup/本地启动说明.md)
-- [数据库初始化脚本](sql/v1.0__init.sql)
+```bash
+# 复制环境变量模板
+cp .env.example .env
 
-## 🏆 赛题适配
+# 编辑 .env，修改以下必填项：
+# MYSQL_ROOT_PASSWORD=your_strong_password
+# JWT_SECRET=your_very_long_random_secret_key_at_least_32_chars
 
-本项目专为**第十五届中国软件杯 A3赛题**设计，可作为"基于大模型的个性化资源生成与学习多智能体系统"的通用管理后台框架。
+# 启动全部服务
+docker-compose up -d
 
----
+# 查看状态
+docker-compose ps
 
-> 子曰："工欲善其事，必先利其器。" —— 《论语·卫灵公》
+# 查看日志
+docker-compose logs -f backend
+```
+
+部署完成后：
+- 前端：http://localhost
+- 后端 API：http://localhost:8081
+- API 文档：http://localhost:8081/doc.html
+
+### 停止服务
+
+```bash
+docker-compose down
+
+# 同时删除数据卷（清空数据库！）
+docker-compose down -v
+```
+
+## 📁 目录结构
+
+```
+generic-sys-admin/
+├── backend/                    # Spring Boot 后端
+│   ├── src/main/java/com/zyy/
+│   │   ├── controller/         # REST 控制器
+│   │   ├── service/           # 业务逻辑
+│   │   ├── mapper/            # MyBatis Mapper
+│   │   ├── model/             # DTO/VO/Entity
+│   │   ├── config/            # 配置类
+│   │   ├── security/          # 安全相关
+│   │   ├── aspect/            # AOP 切面
+│   │   ├── enums/             # 枚举常量
+│   │   └── exception/         # 自定义异常
+│   ├── src/main/resources/
+│   │   ├── application.yml    # 主配置
+│   │   ├── application-dev.yml # 开发配置
+│   │   ├── application-prod.yml # 生产配置
+│   │   └── logback-spring.xml  # 日志配置
+│   ├── sql/
+│   │   └── v1.0__init.sql    # 数据库初始化脚本
+│   └── Dockerfile
+│
+├── frontend/                   # Vue 3 前端
+│   ├── src/
+│   │   ├── api/               # API 接口封装
+│   │   ├── components/        # 公共组件
+│   │   ├── views/             # 页面视图
+│   │   ├── store/             # Pinia 状态
+│   │   ├── router/            # 路由配置
+│   │   ├── utils/             # 工具函数
+│   │   └── config/            # 页面配置
+│   ├── nginx.conf             # Nginx 配置
+│   └── Dockerfile
+│
+├── docker-compose.yml          # 容器编排
+└── README.md
+```
+
+## 🔧 环境变量说明
+
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| `DB_HOST` | 数据库地址 | localhost |
+| `DB_PORT` | 数据库端口 | 3306 |
+| `DB_NAME` | 数据库名 | generic_sys_admin |
+| `DB_USERNAME` | 数据库用户名 | root |
+| `DB_PASSWORD` | 数据库密码 | （必填） |
+| `REDIS_HOST` | Redis 地址 | localhost |
+| `REDIS_PORT` | Redis 端口 | 6379 |
+| `REDIS_PASSWORD` | Redis 密码 | 空 |
+| `JWT_SECRET` | JWT 签名密钥（生产必填！） | dev 默认值 |
+| `MINIMAX_API_KEY` | MiniMax API Key（AI 功能） | 空 |
+| `DOC_ENABLED` | 是否开启 API 文档 | true（dev）/ false（prod） |
+
+## 🔐 安全说明
+
+- ⚠️ 生产环境务必修改 `JWT_SECRET` 为至少 32 位的随机字符串
+- ⚠️ 生产环境务必修改数据库密码
+- ⚠️ 生产环境限制 `DOC_ENABLED=false`
+- ⚠️ 前端反向代理仅适用于开发环境，生产环境建议 Nginx 独立部署
+
+## 📄 许可证
+
+Apache License 2.0

@@ -1,0 +1,190 @@
+# ==========================================================
+# 🏆 开发环境配置（dev profile）
+# ==========================================================
+# 激活方式：spring.profiles.active=dev
+# IDEA 中：Edit Configurations → VM options: -Dspring.profiles.active=dev
+#
+# 特点：
+# - 日志全开（DEBUG），控制台直接看完整 SQL
+# - 跨域全开，前端 localhost:5173 能直接调通后端
+# - 上传限制放宽到 100MB，方便调试
+# - 详细报错，定位问题快
+# ==========================================================
+
+server:
+  port: 8081
+
+spring:
+  application:
+    name: generic-sys-admin
+  freemarker:
+    enabled: false
+  error:
+    include-message: always
+    include-binding-errors: always
+
+  # 开发环境数据源
+  # ⚠️ 正式部署时把密码换成环境变量：password: ${DB_PASSWORD}
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/generic_sys_admin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DB_PASSWORD:1234}
+
+  # Redis（开发时可注释掉，Redis 不可用时系统会自动降级）
+  # redis:
+  #   host: localhost
+  #   port: 6379
+  #   password: ${REDIS_PASSWORD:}
+  #   database: 0
+
+  # 跨域配置（开发环境允许前端直调后端）
+  # ⚠️ 生产环境请在 Nginx 层配置跨域，这里不要开
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  # 关闭模板缓存（html 改了不用重启）
+  thymeleaf:
+    cache: false
+
+# ==========================================================
+# 🌟 Knife4j / Swagger3 在线接口文档
+# ==========================================================
+# 📖 访问地址：http://localhost:8080/doc.html
+# ⚠️ 生产环境在 application-prod.yml 里设置 knife4j.enable: false
+knife4j:
+  # 开发环境开启文档（吹牛素材：给客户演示系统架构）
+  enable: true
+  # 开启 Swagger 调试（默认已开启，这里显式写出）
+  swagger:
+    enabled: true
+
+# ==========================================================
+# 🏆 MinIO 分布式对象存储配置
+# ==========================================================
+# MinIO 文档：https://min.io/docs/minio/linux/developers/python/API.html
+#
+# ⚠️ 安全提醒：正式部署时 accessKey / secretKey 必须从环境变量注入，禁止硬编码！
+#
+# 【快速启动】项目根目录执行：docker-compose -f doc/startup/minio-docker-compose.yml up -d
+minio:
+  endpoint: http://localhost:9000                # MinIO 服务地址
+  access-key: minioadmin                        # 管理后台账号（默认）
+  secret-key: minioadmin                        # 管理后台密码（默认）
+  bucket-name: generic-sys-admin                # 存储桶名称（项目专用）
+  # 公开访问URL（不填则使用 endpoint+bucketName 拼接）
+  public-url: http://localhost:9000/generic-sys-admin
+  # 文件大小限制（默认10MB）
+  max-file-size: 10MB
+
+# ==========================================================
+# 🤖 MiniMax AI 语音接口配置
+# ==========================================================
+# MiniMax 文档：https://www.minimachat.com/docs/api-reference/t2a-v2
+# ⚠️ 安全提醒：正式部署时 API Key 必须从环境变量注入，禁止硬编码！
+minimax:
+  api-url: https://api.us-west-2.modal.direct
+  api-key: sk-cp-K-VJU4P_S4KoWfiGESe1GqHmGNK2ZgIcs9S8o_EntCuvm7NYbzyNpMh26RVQUq6peT4iQpg3ny7pOXqF6LSQ6PzmOAemXJ3oYV_259IxXsS28OAo0rFK3yI
+  app-id: dummy-app-id
+  group-id: dummy-group-id
+
+# ==========================================================
+# 🏆 TTS 模式配置（Mock vs 真实自动切换）
+# ==========================================================
+# tts.provider: minimax    → 使用真实的 Minimax TTS API
+# tts.provider: mock       → 使用 Mock TTS（彩色日志模拟，无 Key 也能跑）
+# tts.provider: (不填)     → 自动判断：apiKey 为空则 Mock，否则 Minimax
+tts:
+  provider: ${TTS_PROVIDER:}    # 不填则自动判断
+  mock:
+    delay-ms: 0             # Mock 模式模拟延迟（毫秒），设为 500 可观察异步效果
+
+# ==========================================================
+# 🏆 存储模式配置（MinIO vs 本地文件系统自动切换）
+# ==========================================================
+# storage.provider: minio  → 强制使用 MinIO（MinIO 不可用则报错）
+# storage.provider: local  → 强制使用本地文件系统
+# storage.provider: auto   → 自动判断：MinIO 不可用则降级到本地（默认）
+storage:
+  provider: ${STORAGE_PROVIDER:auto}  # 默认 auto，MinIO 不可用自动降级
+  fallback-to-local: true              # 允许降级到本地文件系统
+  local:
+    base-dir: ${USER_HOME:C:/Users/联想}    # 本地存储根目录
+    sub-dir: .generic-sys-admin/uploads   # 子目录（按年月自动分目录）
+
+# ==========================================================
+# 🛠️ 通用 AI 客户端配置（OkHttp3 连接池）
+# ==========================================================
+# 用于调用 MiniMax / 讯飞 / 百度 等第三方 AI 厂商接口
+ai:
+  client:
+    # 连接超时（毫秒）
+    connect-timeout: 10000
+    # 读取超时（毫秒，语音合成/生图需要更久）
+    read-timeout: 60000
+    # 写入超时（毫秒）
+    write-timeout: 10000
+
+# ==========================================================
+# 🔧 Hutool 工具集配置
+# ==========================================================
+# Hutool 是 Java 瑞士军刀，提供各种便捷工具
+# 文档：https://hutool.cn/docs/
+# 这里主要是约定字符编码（UTF-8），其他用默认即可
+hutool:
+  # 全局字符编码
+  encoding:
+    charset: UTF-8
+  # 数字格式化（避免 1000 变成 1,000）
+  number:
+    format:
+      decimal-format: "#0.##"
+
+# ==========================================================
+# 🎨 MyBatis-Plus 配置
+# ==========================================================
+mybatis-plus:
+  configuration:
+    # 🏆 开发环境开启 SQL 日志（控制台直接看完整 SQL，发现问题一目了然）
+    # 替换方案：
+    # - log-impl: org.apache.ibatis.logging.stdout.StdOutImpl（控制台彩色输出）
+    # - log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl（配合日志框架）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      # 逻辑删除配置（配套 BaseEntity 的 @TableLogic 注解）
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ==========================================================
+# 🔐 JWT 配置
+# ==========================================================
+jwt:
+  # ⚠️ 开发环境临时 secret，【生产必须换掉】！
+  # 推荐用环境变量：secret: ${JWT_SECRET}
+  secret: dev-secret-do-not-use-in-production-32chars!
+  expiration: 7200          # Token 有效期（秒），2小时
+  refresh-expiration: 604800  # RefreshToken 有效期（秒），7天
+
+# ==========================================================
+# 📝 日志配置（开发环境全开，方便调试）
+# ==========================================================
+logging:
+  level:
+    root: INFO
+    com.zyy: DEBUG
+    # 🏆 单独开 mapper 层的 DEBUG，可以看到完整 SQL 参数
+    com.zyy.mapper: DEBUG
+    # AOP 切面日志，查看权限校验和操作日志
+    com.zyy.aspect: DEBUG
+    # MyBatis-Plus 自身日志
+    com.baomidou.mybatisplus: DEBUG
+    # OkHttp / HttpClient 日志
+    okhttp: DEBUG
+  pattern:
+    # 控制台输出格式：时间 [线程] 级别 类名 - 消息
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

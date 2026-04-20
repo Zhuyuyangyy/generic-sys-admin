@@ -1,0 +1,74 @@
+# ===================================================================
+# 生产环境配置（prod profile）
+# ===================================================================
+# 激活方式：spring.profiles.active=prod
+# 重要：所有敏感信息必须通过环境变量传入，禁止硬编码
+# ===================================================================
+
+server:
+  port: ${SERVER_PORT:8081}
+  servlet:
+    compression:
+      enabled: true
+      mime-types: text/html,text/xml,text/plain,text/css,application/javascript,application/json
+  error:
+    include-message: never
+    include-binding-errors: never
+
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+# ===================================================================
+# MyBatis-Plus 生产配置
+# ===================================================================
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+# ===================================================================
+# 日志级别
+# ===================================================================
+logging:
+  level:
+    root: WARN
+    com.zyy: INFO
+    com.zyy.mapper: WARN
+    com.zyy.aspect: INFO
+  file:
+    name: logs/app.log
+    max-size: 100MB
+    max-history: 30
+
+# ===================================================================
+# Actuator（生产环境仅暴露健康检查）
+# ===================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ===================================================================
+# SpringDoc 生产禁用（通过环境变量控制）
+# ===================================================================
+springdoc:
+  api-docs:
+    enabled: ${DOC_ENABLED:false}
+  swagger-ui:
+    enabled: ${DOC_ENABLED:false}
+
+knife4j:
+  enable: ${DOC_ENABLED:false}

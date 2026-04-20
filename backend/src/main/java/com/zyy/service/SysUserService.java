@@ -34,6 +34,11 @@ public interface SysUserService {
     SysUserLoginVO login(SysUserLoginDTO loginDTO, String clientIp);
 
     /**
+     * 使用 refreshToken 换取新的 accessToken
+     */
+    SysUserLoginVO refreshToken(String refreshToken);
+
+    /**
      * Register a new user account.
      *
      * @param saveDTO User registration data

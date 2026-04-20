@@ -1,9 +1,11 @@
 package com.zyy.aspect;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zyy.enums.BusinessType;
+import com.zyy.model.entity.SysOperationLogEntity;
+import com.zyy.service.SysOperationLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -24,8 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 系统操作日志切面
- * 自动拦截所有REST接口方法，记录操作日志
+ * 操作日志切面
+ * 自动拦截所有REST接口方法，异步记录操作日志到数据库
  */
 @Slf4j
 @Aspect
@@ -34,7 +36,9 @@ import java.util.Map;
 public class OperationLogAspect {
 
     private final ObjectMapper objectMapper;
+    private final SysOperationLogService operationLogService;
 
+    /** 切面：所有 Controller 方法 */
     @Pointcut("execution(* com.zyy..*Controller.*(..))")
     public void controllerPointcut() {}
 
@@ -49,77 +53,101 @@ public class OperationLogAspect {
         }
 
         HttpServletRequest request = attributes.getRequest();
-
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
 
-        String module = inferModule(signature.getDeclaringTypeName());
-        String operationType = inferOperationType(method.getName());
+        // 读取 @Log 注解
+        Log logAnnotation = method.getAnnotation(Log.class);
+        String module = (logAnnotation != null && hasText(logAnnotation.module()))
+                ? logAnnotation.module()
+                : inferModule(signature.getDeclaringTypeName());
+        String operation = (logAnnotation != null && logAnnotation.operation() != null)
+                ? logAnnotation.operation().name()
+                : inferOperationType(method.getName());
+        String description = (logAnnotation != null) ? logAnnotation.description() : "";
 
-        // 构建日志对象
-        Map<String, Object> logEntry = new HashMap<>();
-        logEntry.put("module", module);
-        logEntry.put("operation", operationType);
-        logEntry.put("methodName", signature.getDeclaringTypeName() + "." + method.getName());
-        logEntry.put("requestMethod", request.getMethod());
-        logEntry.put("requestUrl", request.getRequestURI());
-        logEntry.put("ipAddress", getClientIp(request));
-        logEntry.put("userAgent", request.getHeader("User-Agent"));
-        logEntry.put("operationTime", LocalDateTime.now());
+        // 构建日志实体
+        SysOperationLogEntity logEntity = new SysOperationLogEntity();
+        logEntity.setModule(module);
+        logEntity.setOperation(operation);
+        logEntity.setMethodName(signature.getDeclaringTypeName() + "." + method.getName());
+        logEntity.setRequestMethod(request.getMethod());
+        logEntity.setRequestUrl(request.getRequestURI());
+        logEntity.setIpAddress(getClientIp(request));
+        logEntity.setUserAgent(request.getHeader("User-Agent"));
+        logEntity.setOperationTime(LocalDateTime.now());
 
         // 获取当前登录用户
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof LoginUser loginUser) {
-            logEntry.put("userId", loginUser.getUserId());
-            logEntry.put("username", loginUser.getUsername());
+        if (authentication != null && authentication.getPrincipal() instanceof com.zyy.security.LoginUser loginUser) {
+            logEntity.setUserId(loginUser.getUserId());
+            logEntity.setUsername(loginUser.getUsername());
         }
 
-        Object[] args = joinPoint.getArgs();
-        if (args != null && args.length > 0) {
-            logEntry.put("requestParams", filterSensitiveParams(args));
+        // 请求参数
+        try {
+            logEntity.setRequestParams(serializeArgs(joinPoint.getArgs()));
+        } catch (Exception e) {
+            logEntity.setRequestParams("参数序列化失败");
         }
 
         Object result = null;
-        int resultStatus = 1;
+        int resultStatus = 1; // 1=成功
 
         try {
             result = joinPoint.proceed();
             return result;
         } catch (Throwable e) {
-            resultStatus = 0;
-            logEntry.put("errorDetail", StringUtils.abbreviate(e.getMessage(), 500));
+            resultStatus = 0; // 失败
+            logEntity.setErrorDetail(truncate(e.getMessage(), 500));
             throw e;
         } finally {
-            long duration = System.currentTimeMillis() - startTime;
-            logEntry.put("durationMs", duration);
-            logEntry.put("resultStatus", resultStatus);
-            log.info("操作日志 | {}", logEntry);
+            long costTime = System.currentTimeMillis() - startTime;
+            logEntity.setDurationMs(costTime);
+            logEntity.setResultStatus(resultStatus);
+
+            // 异步持久化到数据库
+            try {
+                operationLogService.saveLog(logEntity);
+            } catch (Exception e) {
+                log.error("操作日志保存失败: {}", e.getMessage());
+            }
+
+            // 同时打印到日志（方便调试）
+            if (log.isDebugEnabled()) {
+                log.debug("操作日志 | {}-{} | {} {} | {}ms | user={}",
+                        module, operation, request.getMethod(), request.getRequestURI(),
+                        costTime, logEntity.getUsername());
+            }
         }
     }
 
     private String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
-        if (StringUtils.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
+        if (isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader("Proxy-Client-IP");
         }
-        if (StringUtils.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
+        if (isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader("WL-Proxy-Client-IP");
         }
-        if (StringUtils.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
+        if (isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader("X-Real-IP");
         }
-        if (StringUtils.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
+        if (isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
-        return StringUtils.split(ip, ",")[0].trim();
+        if (!isBlank(ip) && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
     }
 
-    private String filterSensitiveParams(Object[] args) {
+    private String serializeArgs(Object[] args) {
         try {
             Map<String, Object> params = new HashMap<>();
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
-                if (arg instanceof HttpServletRequest 
+                if (arg instanceof HttpServletRequest
                     || arg instanceof HttpServletResponse
                     || arg instanceof MultipartFile) {
                     continue;
@@ -134,41 +162,47 @@ public class OperationLogAspect {
 
     private String inferModule(String className) {
         if (className.contains("Controller")) {
-            return className.substring(className.lastIndexOf(".") + 1, className.indexOf("Controller"));
+            String name = className.substring(className.lastIndexOf(".") + 1);
+            return name.substring(0, name.indexOf("Controller"));
         }
         return "未知模块";
     }
 
     private String inferOperationType(String methodName) {
         if (methodName.startsWith("add") || methodName.startsWith("create") || methodName.startsWith("save")) {
-            return "INSERT";
+            return BusinessType.INSERT.name();
         }
         if (methodName.startsWith("update") || methodName.startsWith("modify")) {
-            return "UPDATE";
+            return BusinessType.UPDATE.name();
         }
         if (methodName.startsWith("delete") || methodName.startsWith("remove")) {
-            return "DELETE";
-        }
-        if (methodName.startsWith("get") || methodName.startsWith("query") || methodName.startsWith("find")) {
-            return "SELECT";
+            return BusinessType.DELETE.name();
         }
         if (methodName.startsWith("login")) {
-            return "LOGIN";
+            return BusinessType.LOGIN.name();
         }
         if (methodName.startsWith("export")) {
-            return "EXPORT";
+            return BusinessType.EXPORT.name();
         }
         if (methodName.startsWith("import")) {
-            return "IMPORT";
+            return BusinessType.IMPORT.name();
         }
-        return "OTHER";
+        return BusinessType.OTHER.name();
     }
 
-    // 内部类：日志对象结构
-    @lombok.Data
-    @lombok.AllArgsConstructor
-    public static class LoginUser {
-        private Long userId;
-        private String username;
+    /** 判断字符串是否有文本 */
+    private boolean hasText(String str) {
+        return str != null && !str.trim().isEmpty();
+    }
+
+    /** 判断字符串是否为空白 */
+    private boolean isBlank(String str) {
+        return str == null || str.trim().isEmpty();
+    }
+
+    /** 截断字符串到指定长度 */
+    private String truncate(String str, int maxLen) {
+        if (str == null) return null;
+        return str.length() <= maxLen ? str : str.substring(0, maxLen);
     }
 }

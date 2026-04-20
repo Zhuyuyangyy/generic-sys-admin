@@ -1,0 +1,11 @@
+Total lines: 428
+L43:             .version("1.0.0")
+L44:             .contact(new Contact()
+L45 ERROR: 'gbk' codec can't encode character '\ue18f' in position 33: illegal multibyte sequence | hex: 202020202020202020202020202020202e6e616d652822e6bfaeefbd86e6
+L46:                 .email("dev@besheep.cn")
+L47:                 .url("https://github.com/besheep/generic-sys-admin"))
+L48:             .license(new License()
+L49:                 .name("MIT License")
+L50:                 .url("https://opensource.org/licenses/MIT"));
+L51: 
+L52:         List<Server> servers = List.of(
