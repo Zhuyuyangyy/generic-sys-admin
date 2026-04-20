@@ -1,7 +1,7 @@
-package com.zyy.common.exception;
+package com.zyy.exception;
 
 /**
- * 未授权异常
+ * Unauthorized Exception
  */
 public class UnauthorizedException extends BusinessException {
     public UnauthorizedException(String message) {

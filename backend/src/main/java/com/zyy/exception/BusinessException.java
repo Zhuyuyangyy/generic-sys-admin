@@ -1,7 +1,7 @@
-package com.zyy.common.exception;
+package com.zyy.exception;
 
 /**
- * 业务异常
+ * Business Exception
  */
 public class BusinessException extends RuntimeException {
     private final int code;

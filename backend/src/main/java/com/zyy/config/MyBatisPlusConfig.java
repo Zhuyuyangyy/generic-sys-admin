@@ -58,6 +58,9 @@ public class MyBatisPlusConfig {
                 // 插入时：自动填充 createTime（如果实体类有这个字段）
                 this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
 
+                // 插入时：自动填充 updateTime（INSERT_UPDATE 字段在插入时也需要填充）
+                this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
+
                 // 插入时：自动填充 isDeleted = 0（如果实体类有这个字段）
                 this.strictInsertFill(metaObject, "isDeleted", Integer.class, 0);
             }

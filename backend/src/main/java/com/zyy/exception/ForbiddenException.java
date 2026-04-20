@@ -1,7 +1,7 @@
-package com.zyy.common.exception;
+package com.zyy.exception;
 
 /**
- * 禁止访问异常
+ * Forbidden Exception
  */
 public class ForbiddenException extends BusinessException {
     public ForbiddenException(String message) {

@@ -1,7 +1,7 @@
-package com.zyy.common.exception;
+package com.zyy.exception;
 
 /**
- * 资源不存在异常
+ * Resource Not Found Exception
  */
 public class ResourceNotFoundException extends BusinessException {
     public ResourceNotFoundException(String message) {

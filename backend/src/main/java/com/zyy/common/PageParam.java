@@ -21,4 +21,21 @@ public class PageParam {
 
     @Schema(description = "排序方式：asc/desc")
     private String sort = "desc";
+
+    // 兼容 MyBatis-Plus 的分页参数方法
+    public Long getPageNum() {
+        return current;
+    }
+
+    public void setPageNum(Long pageNum) {
+        this.current = pageNum;
+    }
+
+    public Long getPageSize() {
+        return size;
+    }
+
+    public void setPageSize(Long pageSize) {
+        this.size = pageSize;
+    }
 }

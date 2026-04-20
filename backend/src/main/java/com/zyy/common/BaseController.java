@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * ==========================================================
- * 🏆 高级创新点：通用基础控制器（BaseController）
+ * 通用基础控制器（BaseController）
  * ==========================================================
  *
  * 所有业务 Controller 继承此类，即可直接使用封装好的：
@@ -65,14 +65,6 @@ public abstract class BaseController {
      */
     protected <T> Result<T> success(T data, String message) {
         return Result.ok(data, message);
-    }
-
-    /**
-     * 通用成功响应 - 带分页数据
-     * 用法：return success(page);
-     */
-    protected <T> Result<T> success(com.baomidou.mybatisplus.core.metadata.IPage<T> page) {
-        return Result.ok(page);
     }
 
     // ==================== 失败响应 ====================

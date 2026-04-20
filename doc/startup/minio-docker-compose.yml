@@ -1,0 +1,117 @@
+# ==========================================================
+# 🏆 MinIO + 分布式对象存储 · 一键启动脚本
+# ==========================================================
+#
+# 📖 使用方法：
+#   1. 确保已安装 Docker Desktop（Windows/macOS）或 Docker（Linux）
+#   2. 在本文件所在目录打开终端
+#   3. 运行：docker-compose -f minio-docker-compose.yml up -d
+#   4. 等待 10 秒，访问 MinIO 控制台
+#
+# 🌐 MinIO 控制台：http://localhost:9001
+#    用户名：minioadmin
+#    密码：minioadmin
+#
+# 🧪 验证是否启动成功：
+#   docker-compose -f minio-docker-compose.yml ps
+#
+# 🛑 停止服务：
+#   docker-compose -f minio-docker-compose.yml down
+#
+# 🗑️ 彻底清理（删除所有数据）：
+#   docker-compose -f minio-docker-compose.yml down -v
+#
+# ==========================================================
+
+services:
+  # ==========================================================
+  # 🏆 MinIO Server（对象存储核心服务）
+  # ==========================================================
+  minio:
+    image: minio/minio:latest          # 官方最新稳定版镜像
+    container_name: minio-server       # 容器名称（docker ps 时显示）
+
+    # ---- 端口映射 ----
+    ports:
+      - "9000:9000"   # MinIO API 端口（上传/下载/删除等 API）
+      - "9001:9001"   # MinIO Console 端口（Web 控制台，管理界面）
+
+    # ---- 环境变量 ----
+    environment:
+      # 根账号（相当于 admin 用户）
+      MINIO_ROOT_USER: minioadmin
+      # 根密码（相当于 admin 密码）
+      MINIO_ROOT_PASSWORD: minioadmin
+      # 区域名称（用于多租户场景，单项目可保持默认）
+      MINIO_DEFAULT_BUCKET: generic-sys-admin
+      # 关闭浏览器自动重定向到 Console（可选，默认开启）
+      MINIO_SERVER_URL: http://localhost:9000
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+
+    # ---- 存储卷（数据持久化）----
+    # ⚠️ 重要：生产环境务必将 /data 挂载到宿主机的专用磁盘
+    # 不挂载的话，删除容器 = 删除所有数据！
+    volumes:
+      # 格式：宿主机路径:容器内部路径
+      - ./minio-data:/data          # 数据存储目录
+      - ./minio-config:/root/.minio  # 配置目录（日志等）
+
+    # ---- 启动命令 ----
+    # minio server：启动存储服务
+    # --console-address ":9001"：强制 Console 监听在 9001 端口
+    # --address ":9000"：强制 API 监听在 9000 端口
+    command: server /data --console-address ":9001"
+
+    # ---- 健康检查（确保服务真正启动后才标记为 healthy）----
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s    # 每 10 秒检查一次
+      timeout: 5s      # 5 秒内响应超时判定为失败
+      retries: 5       # 连续 5 次失败才标记为 unhealthy
+
+    # ---- 重启策略 ----
+    # always：Docker 启动时自动重启，崩溃后自动恢复
+    restart: unless-stopped
+
+    # ---- 网络（加入 minio-network，便于后续加 Prometheus 等监控容器）----
+    networks:
+      - minio-network
+
+  # ==========================================================
+  # 🏆 MinIO Client（mc 命令行工具，用于初始化 Bucket）
+  # ==========================================================
+  # 注意：这个容器会在 MinIO 启动后自动执行一次，
+  #       创建一个叫 generic-sys-admin 的存储桶，
+  #       然后自动退出（不是一直运行）。
+  #       这是"一次性的初始化任务容器"。
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy   # 等 MinIO 完全启动后再执行
+    networks:
+      - minio-network
+    # entrypoint 是容器启动时默认执行的命令
+    # 下面用 stdin_open + tty 是为了让容器不立即退出，保持交互模式
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO to be ready...';
+      sleep 5;
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      echo 'Creating bucket if not exists...';
+      mc mb myminio/generic-sys-admin --ignore-existing;
+      echo 'Setting public read policy...';
+      mc anonymous set download myminio/generic-sys-admin;
+      echo 'Bucket initialized successfully!';
+      echo 'You can now access:';
+      echo '  - API:   http://localhost:9000';
+      echo '  - Console: http://localhost:9001';
+      echo '  - Bucket:  http://localhost:9000/generic-sys-admin/';
+      exit 0;
+      "
+
+networks:
+  minio-network:
+    name: minio-network
+    driver: bridge    # bridge 模式：同一网络内的容器可以互相通信
