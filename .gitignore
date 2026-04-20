@@ -1,13 +1,14 @@
-# 敏感配置（禁止提交）
-backend/src/main/resources/application-dev.yml
-backend/src/main/resources/application-prod.yml
+# Sensitive config (do not commit)
 backend/src/main/resources/.env
 
-# 本地日志和临时文件
+# Log files
 *.log
 *.tmp
 *.swp
 *~
+logs/
+stderr.log
+stdout.log
 
 # IDE
 .idea/
@@ -15,22 +16,20 @@ backend/src/main/resources/.env
 .vscode/
 *.class
 
-# 构建产物
+# Build artifacts
 backend/target/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
-# 环境密钥相关
+# Environment files (do NOT commit real configs)
 .env
 .env.local
 .env.*.local
+!.env.example
 
-# Docker 相关
+# Docker
 docker-compose.override.yml
 
-# 其他
+# Backup
 *.bak
-*.log
-stderr.log
-stdout.log

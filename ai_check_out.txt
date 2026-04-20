@@ -1,0 +1,467 @@
+File: 327 lines (split by \n)
+Raw file has \r\n: False
+File: 327 lines (split by \r\n)
+
+=== L115 (36 bytes) ===
+
+=== L116 (121 bytes) ===
+  [64] UTF8 ERR c3a5
+  [65] CHAR a5
+  [66] UTF8 PAIR c2a8 = U+00A8 "¨"
+  [67] CHAR a8
+  [68] UTF8 ERR c291
+  [69] CHAR 91
+  [70] UTF8 ERR c3a6
+  [71] CHAR a6
+  [72] UTF8 ERR c292
+  [73] CHAR 92
+  [74] UTF8 ERR c2b3
+  [75] CHAR b3
+  [76] UTF8 ERR c3a7
+  [77] CHAR a7
+  [78] UTF8 PAIR c2a7 = U+00A7 "§"
+  [79] CHAR a7
+  [80] UTF8 PAIR c2b7 = U+00B7 "·"
+  [81] CHAR b7
+  [82] UTF8 PAIR c3a9 = U+00E9 "é"
+  [83] CHAR a9
+  [84] UTF8 ERR c28d
+  [85] CHAR 8d
+  [86] UTF8 ERR c28f
+  [87] CHAR 8f
+  [88] UTF8 ERR c3a6
+  [89] CHAR a6
+  [90] UTF8 PAIR c2a8 = U+00A8 "¨"
+  [91] CHAR a8
+  [92] UTF8 ERR c2bb
+  [93] CHAR bb
+  [94] UTF8 ERR c3a7
+  [95] CHAR a7
+  [96] UTF8 PAIR c2a8 = U+00A8 "¨"
+  [97] CHAR a8
+  [98] UTF8 ERR c289
+  [99] CHAR 89
+
+=== L117 (9 bytes) ===
+
+=== L118 (0 bytes) ===
+
+=== L119 (137 bytes) ===
+  [35] UTF8 PAIR c3a9 = U+00E9 "é"
+  [36] CHAR a9
+  [37] UTF8 ERR c290
+  [38] CHAR 90
+  [39] UTF8 ERR c2a0
+  [40] CHAR a0
+  [41] UTF8 ERR c3a5
+  [42] CHAR a5
+  [43] UTF8 ERR c29b
+  [44] CHAR 9b
+  [45] UTF8 ERR c2ac
+  [46] CHAR ac
+  [47] UTF8 ERR c3a6
+  [48] CHAR a6
+  [49] UTF8 ERR c294
+  [50] CHAR 94
+  [51] UTF8 PAIR c2b1 = U+00B1 "±"
+  [52] CHAR b1
+  [53] UTF8 PAIR c3a9 = U+00E9 "é"
+  [54] CHAR a9
+  [55] UTF8 ERR c290
+  [56] CHAR 90
+  [57] UTF8 ERR c2aa
+  [58] CHAR aa
+  [59] UTF8 ERR c3a6
+  [60] CHAR a6
+  [61] UTF8 ERR c29d
+  [62] CHAR 9d
+  [63] UTF8 ERR c2bf
+  [64] CHAR bf
+  [65] UTF8 ERR c3ae
+  [66] CHAR ae
+  [67] UTF8 ERR c287
+  [68] CHAR 87
+  [69] UTF8 ERR c2a3
+  [70] CHAR a3
+  [71] UTF8 PAIR c3a9 = U+00E9 "é"
+  [72] CHAR a9
+  [73] UTF8 ERR c288
+  [74] CHAR 88
+  [75] UTF8 PAIR c2a7 = U+00A7 "§"
+  [76] CHAR a7
+  [77] UTF8 ERR c3ae
+  [78] CHAR ae
+  [79] UTF8 ERR c284
+  [80] CHAR 84
+  [81] UTF8 ERR c281
+  [82] CHAR 81
+  [83] UTF8 ERR c3a6
+  [84] CHAR a6
+  [85] UTF8 ERR c285
+  [86] CHAR 85
+  [87] UTF8 PAIR c2a8 = U+00A8 "¨"
+  [88] CHAR a8
+  [89] UTF8 ERR c3a6
+  [90] CHAR a6
+  [91] UTF8 ERR c2bf
+  [92] CHAR bf
+  [93] UTF8 ERR c2af
+  [94] CHAR af
+  [95] UTF8 ERR c3a5
+  [96] CHAR a5
+  [97] UTF8 ERR c294
+  [98] CHAR 94
+  [99] UTF8 ERR c28d
+
+=== L120 (129 bytes) ===
+  [49] UTF8 PAIR c3a9 = U+00E9 "é"
+  [50] CHAR a9
+  [51] UTF8 ERR c296
+  [52] CHAR 96
+  [53] UTF8 ERR c2ba
+  [54] CHAR ba
+  [55] UTF8 ERR c3a5
+  [56] CHAR a5
+  [57] UTF8 ERR c2a0
+  [58] CHAR a0
+  [59] UTF8 ERR c2ab
+  [60] CHAR ab
+  [61] UTF8 ERR c3a4
+  [62] CHAR a4
+  [63] UTF8 ERR c2ba
+  [64] CHAR ba
+  [65] UTF8 ERR c29d
+  [66] CHAR 9d
+  [67] UTF8 PAIR c3a8 = U+00E8 "è"
+  [68] CHAR a8
+  [69] UTF8 PAIR c2a4 = U+00A4 "¤"
+  [70] CHAR a4
+  [71] UTF8 PAIR c2b0 = U+00B0 "°"
+  [72] CHAR b0
+  [73] UTF8 ERR c3a4
+  [74] CHAR a4
+  [75] UTF8 ERR c2bd
+  [76] CHAR bd
+  [77] UTF8 ERR c2b9
+  [78] CHAR b9
+  [79] UTF8 ERR c3a7
+  [80] CHAR a7
+  [81] UTF8 ERR c2ac
+  [82] CHAR ac
+  [83] UTF8 ERR c29f
+  [84] CHAR 9f
+  [90] UTF8 ERR c3a7
+  [91] CHAR a7
+  [92] UTF8 ERR c280
+  [93] CHAR 80
+  [94] UTF8 ERR c2b9
+  [95] CHAR b9
+  [96] UTF8 ERR c3a7
+  [97] CHAR a7
+  [98] UTF8 PAIR c2a8 = U+00A8 "¨"
+  [99] CHAR a8
+
+=== L121 (0 bytes) ===
+
+=== L122 (13 bytes) ===
+
+=== L123 (225 bytes) ===
+  [21] UTF8 PAIR c3a9 = U+00E9 "é"
+  [22] CHAR a9
+  [23] UTF8 ERR c296
+  [24] CHAR 96
+  [25] UTF8 ERR c2ba
+  [26] CHAR ba
+  [27] UTF8 ERR c3a5
+  [28] CHAR a5
+  [29] UTF8 ERR c2ac
+  [30] CHAR ac
+  [31] UTF8 ERR c2aa
+  [32] CHAR aa
+  [33] UTF8 ERR c3a5
+  [34] CHAR a5
+  [35] UTF8 ERR c2ab
+  [36] CHAR ab
+  [37] UTF8 ERR c2ac
+  [38] CHAR ac
+  [39] UTF8 ERR c3a7
+  [40] CHAR a7
+  [41] UTF8 ERR c2bc
+  [42] CHAR bc
+  [43] UTF8 ERR c282
+  [44] CHAR 82
+  [45] UTF8 ERR c3a6
+  [46] CHAR a6
+  [47] UTF8 ERR c292
+  [48] CHAR 92
+  [49] UTF8 ERR c2b6
+  [50] CHAR b6
+  [51] UTF8 ERR c3a6
+  [52] CHAR a6
+  [53] UTF8 ERR c28b
+  [54] CHAR 8b
+  [55] UTF8 ERR c2a0
+  [56] CHAR a0
+  [57] UTF8 PAIR c3a9 = U+00E9 "é"
+  [58] CHAR a9
+  [59] UTF8 ERR c296
+  [60] CHAR 96
+  [61] UTF8 ERR c2bf
+  [62] CHAR bf
+  [63] UTF8 ERR c3a5
+  [64] CHAR a5
+  [65] UTF8 ERR c2ac
+  [66] CHAR ac
+  [67] UTF8 ERR c2ac
+  [68] CHAR ac
+  [69] UTF8 ERR c3a6
+  [70] CHAR a6
+  [71] UTF8 ERR c2b9
+  [72] CHAR b9
+  [73] UTF8 ERR c2b4
+  [74] CHAR b4
+  [75] UTF8 PAIR c3a9 = U+00E9 "é"
+  [76] CHAR a9
+  [77] UTF8 ERR c296
+  [78] CHAR 96
+  [79] UTF8 ERR c2bf
+  [80] CHAR bf
+  [81] UTF8 ERR c3a6
+  [82] CHAR a6
+  [83] UTF8 ERR c2b6
+  [84] CHAR b6
+  [85] UTF8 ERR c298
+  [86] CHAR 98
+  [87] UTF8 ERR c3a7
+  [88] CHAR a7
+  [89] UTF8 ERR c289
+  [90] CHAR 89
+  [91] UTF8 ERR c293
+  [92] CHAR 93
+  [93] UTF8 PAIR c3a9 = U+00E9 "é"
+  [94] CHAR a9
+  [95] UTF8 ERR c28e
+  [96] CHAR 8e
+  [97] UTF8 ERR c2bd
+  [98] CHAR bd
+  [99] UTF8 ERR c3a7
+
+=== L124 (55 bytes) ===
+
+=== L125 (59 bytes) ===
+
+=== L126 (53 bytes) ===
+
+=== L127 (317 bytes) ===
+  [19] UTF8 PAIR c3a9 = U+00E9 "é"
+  [20] CHAR a9
+  [21] UTF8 ERR c290
+  [22] CHAR 90
+  [23] UTF8 ERR c2a1
+  [24] CHAR a1
+  [25] UTF8 ERR c3a6
+  [26] CHAR a6
+  [27] UTF8 ERR c28e
+  [28] CHAR 8e
+  [29] UTF8 ERR c291
+  [30] CHAR 91
+  [31] UTF8 ERR c3a6
+  [32] CHAR a6
+  [33] UTF8 ERR c287
+  [34] CHAR 87
+  [35] UTF8 ERR c28f
+  [36] CHAR 8f
+  [37] UTF8 ERR c3a5
+  [38] CHAR a5
+  [39] UTF8 ERR c2a6
+  [40] CHAR a6
+  [41] UTF8 ERR c29e
+  [42] CHAR 9e
+  [43] UTF8 ERR c3a5
+  [44] CHAR a5
+  [45] UTF8 ERR c282
+  [46] CHAR 82
+  [47] UTF8 ERR c29e
+  [48] CHAR 9e
+  [49] UTF8 ERR c3a6
+  [50] CHAR a6
+  [51] UTF8 ERR c29f
+  [52] CHAR 9f
+  [53] UTF8 ERR c28a
+  [54] CHAR 8a
+  [55] UTF8 ERR c3a5
+  [56] CHAR a5
+  [57] UTF8 ERR c2ae
+  [58] CHAR ae
+  [59] UTF8 ERR c2a5
+  [60] CHAR a5
+  [61] UTF8 ERR c3a5
+  [62] CHAR a5
+  [63] UTF8 ERR c29b
+  [64] CHAR 9b
+  [65] UTF8 ERR c2a9
+  [66] CHAR a9
+  [67] UTF8 ERR c3a6
+  [68] CHAR a6
+  [69] UTF8 ERR c29e
+  [70] CHAR 9e
+  [71] UTF8 ERR c282
+  [72] CHAR 82
+  [73] UTF8 PAIR c3a9 = U+00E9 "é"
+  [74] CHAR a9
+  [75] UTF8 ERR c296
+  [76] CHAR 96
+  [77] UTF8 ERR c2bf
+  [78] CHAR bf
+  [79] UTF8 ERR c3a6
+  [80] CHAR a6
+  [81] UTF8 ERR c2b6
+  [82] CHAR b6
+  [83] UTF8 ERR c298
+  [84] CHAR 98
+  [85] UTF8 ERR c3a7
+  [86] CHAR a7
+  [87] UTF8 ERR c289
+  [88] CHAR 89
+  [89] UTF8 ERR c285
+  [90] CHAR 85
+  [91] UTF8 ERR c3a7
+  [92] CHAR a7
+  [93] UTF8 ERR c2bb
+  [94] CHAR bb
+  [95] UTF8 ERR c297
+  [96] CHAR 97
+  [97] UTF8 ERR c3a4
+  [98] CHAR a4
+  [99] UTF8 ERR c2bd
+
+=== L128 (50 bytes) ===
+
+=== L129 (44 bytes) ===
+
+=== L130 (46 bytes) ===
+
+=== L131 (84 bytes) ===
+  [19] UTF8 PAIR c3a9 = U+00E9 "é"
+  [20] CHAR a9
+  [21] UTF8 ERR c290
+  [22] CHAR 90
+  [23] UTF8 ERR c2a0
+  [24] CHAR a0
+  [25] UTF8 ERR c3a5
+  [26] CHAR a5
+  [27] UTF8 ERR c29b
+  [28] CHAR 9b
+  [29] UTF8 ERR c2ac
+  [30] CHAR ac
+  [31] UTF8 ERR c3a6
+  [32] CHAR a6
+  [33] UTF8 ERR c294
+  [34] CHAR 94
+  [35] UTF8 PAIR c2b1 = U+00B1 "±"
+  [36] CHAR b1
+  [37] UTF8 PAIR c3a9 = U+00E9 "é"
+  [38] CHAR a9
+  [39] UTF8 ERR c290
+  [40] CHAR 90
+  [41] UTF8 ERR c2aa
+  [42] CHAR aa
+  [43] UTF8 ERR c3a7
+  [44] CHAR a7
+  [45] UTF8 ERR c289
+  [46] CHAR 89
+  [47] UTF8 ERR c288
+  [48] CHAR 88
+  [49] UTF8 ERR c3a6
+  [50] CHAR a6
+  [51] UTF8 ERR c28b
+  [52] CHAR 8b
+  [53] UTF8 ERR c285
+  [54] CHAR 85
+
+=== L132 (0 bytes) ===
+
+=== L133 (230 bytes) ===
+  [15] UTF8 ERR c3a5
+  [16] CHAR a5
+  [17] UTF8 ERR c2a9
+  [18] CHAR a9
+  [19] UTF8 ERR c2b5
+  [20] CHAR b5
+  [21] UTF8 ERR c3a2
+  [22] CHAR a2
+  [23] UTF8 ERR c280
+  [24] CHAR 80
+  [25] UTF8 ERR c2b3
+  [26] CHAR b3
+  [27] UTF8 ERR c3a5
+  [28] CHAR a5
+  [29] UTF8 ERR c280
+  [30] CHAR 80
+  [31] UTF8 ERR c2b9
+  [32] CHAR b9
+  [33] UTF8 PAIR c3a9 = U+00E9 "é"
+  [34] CHAR a9
+  [35] UTF8 ERR c290
+  [36] CHAR 90
+  [37] UTF8 ERR c28f
+  [38] CHAR 8f
+  [39] UTF8 ERR c3a5
+  [40] CHAR a5
+  [41] UTF8 PAIR c2a4 = U+00A4 "¤"
+  [42] CHAR a4
+  [43] UTF8 ERR c290
+  [44] CHAR 90
+  [45] UTF8 ERR c3a5
+  [46] CHAR a5
+  [47] UTF8 ERR c2b9
+  [48] CHAR b9
+  [49] UTF8 ERR c293
+  [50] CHAR 93
+  [51] UTF8 PAIR c3a9 = U+00E9 "é"
+  [52] CHAR a9
+  [53] UTF8 ERR c28e
+  [54] CHAR 8e
+  [55] UTF8 PAIR c2b0 = U+00B0 "°"
+  [56] CHAR b0
+  [57] UTF8 ERR c3ae
+  [58] CHAR ae
+  [59] UTF8 ERR c281
+  [60] CHAR 81
+  [61] UTF8 ERR c286
+  [62] CHAR 86
+  [63] UTF8 PAIR c3a8 = U+00E8 "è"
+  [64] CHAR a8
+  [65] UTF8 ERR c2bf
+  [66] CHAR bf
+  [67] UTF8 ERR c294
+  [68] CHAR 94
+  [69] UTF8 ERR c3a5
+  [70] CHAR a5
+  [71] UTF8 PAIR c2a8 = U+00A8 "¨"
+  [72] CHAR a8
+  [73] UTF8 ERR c2b4
+  [74] CHAR b4
+  [81] UTF8 PAIR c3a9 = U+00E9 "é"
+  [82] CHAR a9
+  [83] UTF8 ERR c296
+  [84] CHAR 96
+  [85] UTF8 ERR c2bf
+  [86] CHAR bf
+  [87] UTF8 ERR c3a6
+  [88] CHAR a6
+  [89] UTF8 ERR c2b6
+  [90] CHAR b6
+  [91] UTF8 ERR c298
+  [92] CHAR 98
+  [93] UTF8 ERR c3a7
+  [94] CHAR a7
+  [95] UTF8 ERR c29f
+  [96] CHAR 9f
+  [97] UTF8 ERR c281
+  [98] CHAR 81
+  [99] UTF8 PAIR c3a9 = U+00E9 "é"
+
+=== L134 (74 bytes) ===
+
+=== L135 (13 bytes) ===

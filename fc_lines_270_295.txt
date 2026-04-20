@@ -1,0 +1,26 @@
+L270:         }
+L271:     }
+L272: 
+L273:     /**
+L274:      * ==========================================================
+L275:      * æ££å¨æ±² é¹éç¶é£æ´ªå´éç»çéºåæ´£å¨?     * ==========================================================
+L276:      *
+L277:      * éµåäºªurl æ¿æîé¦îå¦´?     * ```bash
+L278:      * curl -X DELETE http://localhost:8080/api/file/batch \
+L279:      *   -H "Authorization: Bearer <token>" \
+L280:      *   -H "Content-Type: application/json" \
+L281:      *   -d '{"urls":["url1","url2","url3"]}'
+L282:      * ```
+L283:      */
+L284:     @DeleteMapping("/batch")
+L285:     @Operation(summary = "é¹éç¶é£æ´ªå´éç»çéºåæ´£å¨?, description = "å¨æ¯åæ¿ååé§î¬å¨ç©éå©åé¡¦æç¨é¡å®ç®å¨´?)
+L286:     public Result<?> batchDelete(
+L287:         @RequestBody JSONObject body
+L288:     ) {
+L289:         var urls = body.getJSONArray("urls");
+L290:         if (urls == null || urls.isEmpty()) {
+L291:             return error("é å¬æ±è¤°ä½¹ç¬å¨æ»æ´£é¸æå¨å¨åº¨æéîç®å¨´çºæ³é¨îæ°?);
+L292:         }
+L293: 
+L294:         int successCount = 0;
+L295:         int failCount = 0;

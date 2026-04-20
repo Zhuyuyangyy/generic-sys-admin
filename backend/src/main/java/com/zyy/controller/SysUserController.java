@@ -2,6 +2,7 @@ package com.zyy.controller;
 
 import com.zyy.common.PageParam;
 import com.zyy.common.Result;
+import com.zyy.model.dto.RefreshTokenDTO;
 import com.zyy.model.dto.SysUserLoginDTO;
 import com.zyy.model.dto.SysUserPasswordDTO;
 import com.zyy.model.dto.SysUserSaveDTO;
@@ -67,6 +68,16 @@ public class SysUserController {
 
         SysUserLoginVO result = userService.login(loginDTO, clientIp);
         return Result.ok(result, "Login successful");
+    }
+
+    /**
+     * 刷新访问令牌
+     */
+    @PostMapping("/refresh-token")
+    @Operation(summary = "刷新Token", description = "使用refreshToken换取新的accessToken")
+    public Result<SysUserLoginVO> refreshToken(@RequestBody @Valid RefreshTokenDTO dto) {
+        SysUserLoginVO result = userService.refreshToken(dto.getRefreshToken());
+        return Result.ok(result, "Token refreshed successfully");
     }
 
     /**

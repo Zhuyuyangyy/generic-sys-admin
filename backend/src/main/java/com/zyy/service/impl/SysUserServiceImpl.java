@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zyy.config.AppProperties;
 import com.zyy.exception.BusinessException;
+import com.zyy.service.RbacService;
 import com.zyy.exception.UnauthorizedException;
 import com.zyy.mapper.SysUserMapper;
 import com.zyy.model.dto.SysUserLoginDTO;
@@ -28,9 +29,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -58,6 +57,7 @@ public class SysUserServiceImpl implements SysUserService {
     private final SysUserMapper userMapper;
     private final AppProperties appProperties;
     private final JwtUtil jwtUtil;
+    private final RbacService rbacService;
 
     /** BCrypt password encoder with configured cost factor */
     private BCryptPasswordEncoder passwordEncoder;
@@ -128,12 +128,47 @@ public class SysUserServiceImpl implements SysUserService {
 
         // Generate JWT tokens using centralized JwtUtil
         Map<String, Object> claims = new HashMap<>();
+        // 写入角色和权限（供前端菜单渲染 + 后端接口鉴权）
+        claims.put("roles", rbacService.getRolesByUserId(user.getId()));
+        claims.put("permissions", rbacService.getPermissionsByUserId(user.getId()));
         String accessToken = jwtUtil.sign(user.getId(), user.getUsername(), claims);
         String refreshToken = jwtUtil.refresh(user.getId(), user.getUsername(), claims);
 
         return SysUserLoginVO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .expiresIn(appProperties.getSecurity().getJwtExpiration())
+                .tokenType("Bearer")
+                .user(entityToVO(user))
+                .loginTime(LocalDateTime.now())
+                .build();
+    }
+
+    @Override
+    public SysUserLoginVO refreshToken(String refreshToken) {
+        if (!jwtUtil.validate(refreshToken)) {
+            throw new UnauthorizedException("Refresh token无效或已过期，请重新登录");
+        }
+        Long userId = jwtUtil.getUserId(refreshToken);
+        String username = jwtUtil.getUsername(refreshToken);
+
+        SysUserEntity user = userMapper.selectById(userId);
+        if (user == null || user.getIsDeleted() == 1) {
+            throw new UnauthorizedException("用户不存在，请重新登录");
+        }
+        if (user.getStatus() == 0) {
+            throw new UnauthorizedException("账号已禁用，请联系管理员");
+        }
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", rbacService.getRolesByUserId(userId));
+        claims.put("permissions", rbacService.getPermissionsByUserId(userId));
+        String newAccessToken = jwtUtil.sign(user.getId(), user.getUsername(), claims);
+        String newRefreshToken = jwtUtil.refresh(user.getId(), user.getUsername(), claims);
+
+        return SysUserLoginVO.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
                 .expiresIn(appProperties.getSecurity().getJwtExpiration())
                 .tokenType("Bearer")
                 .user(entityToVO(user))
