@@ -47,6 +47,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/ai-studio/AiStudio.vue'),
         meta: { requiresAuth: true },
       },
+      {
+        path: 'logs',
+        name: 'OperationLog',
+        component: () => import('@/views/logs/OperationLog.vue'),
+        meta: { requiresAuth: true, title: '操作日志' },
+      },
     ],
   },
 ]
