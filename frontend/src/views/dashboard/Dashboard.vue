@@ -8,7 +8,7 @@
             <el-icon :size="28"><Box /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ stats.equipmentTotal }}</div>
+            <div class="stat-value">{{ stats.equipment?.total || 0 }}</div>
             <div class="stat-label">设备总数</div>
           </div>
         </el-card>
@@ -19,7 +19,7 @@
             <el-icon :size="28"><Goods /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ stats.consumableTotal }}</div>
+            <div class="stat-value">{{ stats.consumable?.total || 0 }}</div>
             <div class="stat-label">耗材种类</div>
           </div>
         </el-card>
@@ -30,7 +30,7 @@
             <el-icon :size="28"><Warning /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ stats.lowStockCount }}</div>
+            <div class="stat-value">{{ stats.consumable?.lowStock || 0 }}</div>
             <div class="stat-label">库存预警</div>
           </div>
         </el-card>
@@ -38,10 +38,10 @@
       <el-col :span="6">
         <el-card shadow="hover" class="stat-card">
           <div class="stat-icon" style="background: linear-gradient(135deg, #F56C6C, #fab6b6);">
-            <el-icon :size="28"><CircleClose /></el-icon>
+            <el-icon :size="28"><Tools /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ stats.maintenanceCount }}</div>
+            <div class="stat-value">{{ stats.equipment?.maintenance || 0 }}</div>
             <div class="stat-label">维修中设备</div>
           </div>
         </el-card>
@@ -56,61 +56,64 @@
           <template #header>
             <div class="card-header">
               <span>设备状态分布</span>
-              <el-button text size="small" @click="fetchEquipmentChart">刷新</el-button>
+              <el-button text size="small" @click="loadStats">刷新</el-button>
             </div>
           </template>
           <div ref="pieChartRef" style="height: 300px;" />
         </el-card>
       </el-col>
 
-      <!-- 库存预警仪表盘 -->
+      <!-- 操作日志趋势 -->
       <el-col :span="12">
         <el-card shadow="hover">
           <template #header>
             <div class="card-header">
-              <span>耗材库存预警</span>
-              <el-button text size="small" @click="fetchConsumableChart">刷新</el-button>
+              <span>近7日操作日志</span>
             </div>
           </template>
-          <div ref="gaugeChartRef" style="height: 300px;" />
+          <div ref="barChartRef" style="height: 300px;" />
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 库存预警列表 -->
+    <!-- 设备状态 + 操作类型 -->
     <el-row :gutter="16" style="margin-top: 16px;">
-      <el-col :span="24">
+      <el-col :span="12">
         <el-card shadow="hover">
           <template #header>
             <div class="card-header">
-              <span>⚠️ 库存异常详情</span>
+              <span>操作类型分布</span>
             </div>
           </template>
-          <el-table :data="lowStockItems" stripe :empty-text="lowStockItems.length === 0 ? '暂无预警' : ''">
-            <el-table-column prop="name" label="耗材名称" min-width="160" />
-            <el-table-column prop="category" label="类别" width="120" />
-            <el-table-column prop="currentStock" label="当前库存" width="100">
-              <template #default="{ row }">
-                <span :class="stockClass(row)">{{ row.currentStock }} {{ row.unit }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="minStockLevel" label="最低库存" width="100" />
-            <el-table-column prop="maxStockLevel" label="最高库存" width="100" />
-            <el-table-column label="库存健康度" width="220">
-              <template #default="{ row }">
-                <el-progress
-                  :percentage="stockPercentage(row)"
-                  :color="stockColor(row)"
-                  :stroke-width="10"
-                />
-              </template>
-            </el-table-column>
-            <el-table-column label="状态" width="100">
-              <template #default="{ row }">
-                <el-tag :type="stockTagType(row)" size="small">{{ stockStatus(row) }}</el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
+          <div ref="operationChartRef" style="height: 280px;" />
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <span>耗材预警信息</span>
+              <el-button text size="small" @click="loadStats">刷新</el-button>
+            </div>
+          </template>
+          <div class="summary-stats">
+            <div class="summary-item">
+              <span class="summary-num warning">{{ stats.consumable?.lowStock || 0 }}</span>
+              <span class="summary-text">库存不足</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-num danger">{{ stats.consumable?.expiring || 0 }}</span>
+              <span class="summary-text">30天内过期</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-num">{{ stats.user?.total || 0 }}</span>
+              <span class="summary-text">用户总数</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-num success">{{ stats.user?.active || 0 }}</span>
+              <span class="summary-text">活跃用户</span>
+            </div>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -119,173 +122,161 @@
 
 <script setup lang="ts">
 /**
- * 数据大屏视图（仪表盘）
- * @description 基于 ECharts 的数据可视化大屏，展示设备状态分布、库存预警等关键业务指标
+ * 数据大屏视图（仪表盘）- 聚合版
+ * @description 调用后端 /api/dashboard/stats 聚合接口，前端不再拉全量明细
  */
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
-import { Box, Goods, Warning, CircleClose } from '@element-plus/icons-vue'
-import { getEquipmentPage } from '@/api/equipment'
-import { getConsumablePage } from '@/api/consumable'
-import type { EquipmentVO } from '@/api/equipment'
-import type { ConsumableVO } from '@/api/consumable'
+import { Box, Goods, Warning, Tools } from '@element-plus/icons-vue'
+import { getDashboardStats, type DashboardStatsVO } from '@/api/dashboard'
 
 const router = useRouter()
 
-/** 统计卡片数据 */
-const stats = reactive({
-  equipmentTotal: 0,
-  consumableTotal: 0,
-  lowStockCount: 0,
-  maintenanceCount: 0,
+/** 统计数据（从后端聚合获取） */
+const stats = reactive<DashboardStatsVO>({
+  equipment: { total: 0, normal: 0, maintenance: 0, scrapped: 0 },
+  consumable: { total: 0, lowStock: 0, expiring: 0 },
+  user: { total: 0, active: 0, disabled: 0 },
+  logTrend: [],
+  equipmentStatus: [],
+  operationType: [],
 })
-
-/** 低库存耗材列表 */
-const lowStockItems = ref<ConsumableVO[]>([])
 
 /** 图表引用 */
 const pieChartRef = ref()
-const gaugeChartRef = ref()
+const barChartRef = ref()
+const operationChartRef = ref()
 let pieChart: echarts.ECharts
-let gaugeChart: echarts.ECharts
+let barChart: echarts.ECharts
+let operationChart: echarts.ECharts
 
-/** 设备状态分布数据 */
-const equipmentStatusData = ref([
-  { name: '正常', value: 0, itemStyle: { color: '#67C23A' } },
-  { name: '维修中', value: 0, itemStyle: { color: '#E6A23C' } },
-  { name: '报废', value: 0, itemStyle: { color: '#F56C6C' } },
-])
-
-/** ========== 数据加载 ========== */
-
-/**
- * 异步加载设备统计数据
- */
-const fetchEquipmentStats = async () => {
+/** 加载统计数据 */
+const loadStats = async () => {
   try {
-    const res: any = await getEquipmentPage({ pageNum: 1, pageSize: 1 })
-    stats.equipmentTotal = res.data.total || 0
-    // 再次请求各状态数量（简化：取总数，业务中应有独立接口）
-    // 状态数据通过图表接口单独拉取
-  } catch {}
+    const res: any = await getDashboardStats()
+    // 合并到响应式对象
+    Object.assign(stats, res)
+    renderCharts()
+  } catch {
+    // silent fail
+  }
 }
 
-const fetchEquipmentChart = async () => {
-  try {
-    const res: any = await getEquipmentPage({ pageNum: 1, pageSize: 500 })
-    const list: EquipmentVO[] = res.data.list || []
-    const counts = { 0: 0, 1: 0, 2: 0 }
-    list.forEach((e: EquipmentVO) => { if (counts[e.status] !== undefined) counts[e.status]++ })
-    equipmentStatusData.value = [
-      { name: '正常', value: counts[1], itemStyle: { color: '#67C23A' } },
-      { name: '维修中', value: counts[0], itemStyle: { color: '#E6A23C' } },
-      { name: '报废', value: counts[2], itemStyle: { color: '#F56C6C' } },
-    ]
-    stats.equipmentTotal = res.data.total || 0
-    stats.maintenanceCount = counts[0]
-    pieChart.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-      legend: { bottom: 0, textStyle: { fontSize: 13 } },
-      series: [{
-        type: 'pie',
-        radius: ['42%', '72%'],
-        center: ['50%', '45%'],
-        avoidLabelOverlap: true,
-        itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
-        label: { show: true, formatter: '{b}\n{c}台', fontSize: 13 },
-        emphasis: {
-          itemStyle: { shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.2)' },
-          label: { fontSize: 15, fontWeight: 'bold' },
-        },
-        data: equipmentStatusData.value,
-      }],
-    })
-  } catch {}
+/** 渲染所有图表 */
+const renderCharts = () => {
+  renderPieChart()
+  renderBarChart()
+  renderOperationChart()
 }
 
-const fetchConsumableChart = async () => {
-  try {
-    const res: any = await getConsumablePage({ pageNum: 1, pageSize: 500 })
-    const list: ConsumableVO[] = res.data.list || []
-    stats.consumableTotal = res.data.total || 0
-
-    // 库存预警：当前库存 <= 最低库存
-    const lowStock = list.filter(c => c.currentStock <= c.minStockLevel)
-    lowStockItems.value = lowStock
-    stats.lowStockCount = lowStock.length
-
-    // 仪表盘：正常/预警/危险 三档
-    const normal = list.filter(c => c.currentStock > c.minStockLevel && c.currentStock < c.maxStockLevel).length
-    const warning = lowStock.length
-    const danger = list.filter(c => c.currentStock === 0).length
-
-    gaugeChart.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: {c}' },
-      series: [{
-        type: 'gauge',
-        center: ['50%', '60%'],
-        startAngle: 200,
-        endAngle: -20,
-        min: 0,
-        max: list.length || 1,
-        splitNumber: 4,
-        axisLine: {
-          lineStyle: { width: 20, color: [
-            [0.3, '#67C23A'],
-            [0.7, '#E6A23C'],
-            [1, '#F56C6C'],
-          ]},
-        },
-        pointer: { width: 5, length: '60%', itemStyle: { color: '#409EFF' } },
-        axisTick: { distance: -20, length: 6 },
-        splitLine: { distance: -22, length: 14 },
-        axisLabel: { distance: -30, fontSize: 11, color: '#888' },
-        detail: {
-          valueAnimation: true,
-          formatter: '{c} 项异常',
-          fontSize: 16,
-          fontWeight: 'bold',
-          color: '#F56C6C',
-          offsetCenter: [0, '40%'],
-        },
-        data: [{ value: warning, name: '库存预警' }],
-      }],
-    })
-  } catch {}
-}
-
-/** ========== 辅助方法 ========== */
-const stockPercentage = (row: ConsumableVO) => {
-  const range = row.maxStockLevel - row.minStockLevel
-  if (range <= 0) return 100
-  return Math.min(100, Math.round(((row.currentStock - row.minStockLevel) / range) * 100))
-}
-const stockColor = (row: ConsumableVO) => {
-  if (row.currentStock === 0) return '#F56C6C'
-  if (row.currentStock <= row.minStockLevel) return '#E6A23C'
-  return '#67C23A'
-}
-const stockClass = (row: ConsumableVO) => row.currentStock <= row.minStockLevel ? 'low-stock-text' : ''
-const stockTagType = (row: ConsumableVO) => row.currentStock === 0 ? 'danger' : row.currentStock <= row.minStockLevel ? 'warning' : 'success'
-const stockStatus = (row: ConsumableVO) => row.currentStock === 0 ? '耗尽' : row.currentStock <= row.minStockLevel ? '偏低' : '正常'
-
-/** ========== 生命周期 ========== */
-onMounted(() => {
-  // 初始化图表实例
-  pieChart = echarts.init(pieChartRef.value)
-  gaugeChart = echarts.init(gaugeChartRef.value)
-
-  // 加载数据
-  fetchEquipmentStats()
-  fetchEquipmentChart()
-  fetchConsumableChart()
-
-  // 响应窗口大小变化
-  window.addEventListener('resize', () => {
-    pieChart.resize()
-    gaugeChart.resize()
+/** 设备状态饼图 */
+const renderPieChart = () => {
+  if (!pieChart) return
+  const data = stats.equipmentStatus?.length
+    ? stats.equipmentStatus
+    : [
+        { label: '正常', value: stats.equipment?.normal || 0 },
+        { label: '维护中', value: stats.equipment?.maintenance || 0 },
+        { label: '已报废', value: stats.equipment?.scrapped || 0 },
+      ]
+  pieChart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { bottom: 0, textStyle: { fontSize: 13 } },
+    color: ['#67C23A', '#E6A23C', '#F56C6C'],
+    series: [{
+      type: 'pie',
+      radius: ['42%', '72%'],
+      center: ['50%', '45%'],
+      avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+      label: { show: true, formatter: '{b}\n{c}', fontSize: 13 },
+      emphasis: {
+        itemStyle: { shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.2)' },
+        label: { fontSize: 15, fontWeight: 'bold' },
+      },
+      data,
+    }],
   })
+}
+
+/** 操作日志趋势柱状图 */
+const renderBarChart = () => {
+  if (!barChart) return
+  const data = stats.logTrend || []
+  barChart.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: 50, right: 20, top: 20, bottom: 40 },
+    xAxis: {
+      type: 'category',
+      data: data.map((d: { date: string }) => d.date.slice(5)), // MM-DD
+      axisLabel: { fontSize: 11, color: '#888' },
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { fontSize: 11, color: '#888' },
+      splitLine: { lineStyle: { color: '#f0f0f0' } },
+    },
+    series: [{
+      type: 'bar',
+      data: data.map((d: { count: number }) => d.count),
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: '#667eea' },
+          { offset: 1, color: '#764ba2' },
+        ]),
+        borderRadius: [4, 4, 0, 0],
+      },
+      barWidth: '50%',
+    }],
+  })
+}
+
+/** 操作类型分布饼图 */
+const renderOperationChart = () => {
+  if (!operationChart) return
+  const data = stats.operationType || []
+  operationChart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { bottom: 0, textStyle: { fontSize: 12 }, itemWidth: 14 },
+    color: ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#B37FEB'],
+    series: [{
+      type: 'pie',
+      radius: ['35%', '65%'],
+      center: ['50%', '45%'],
+      avoidLabelOverlap: true,
+      label: { show: true, formatter: '{b}: {d}%', fontSize: 11 },
+      emphasis: {
+        itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.15)' },
+        label: { fontSize: 13, fontWeight: 'bold' },
+      },
+      data,
+    }],
+  })
+}
+
+/** 初始化图表 */
+const initCharts = () => {
+  pieChart = echarts.init(pieChartRef.value)
+  barChart = echarts.init(barChartRef.value)
+  operationChart = echarts.init(operationChartRef.value)
+}
+
+let resizeHandler: () => void
+
+onMounted(() => {
+  initCharts()
+  loadStats()
+  resizeHandler = () => {
+    pieChart?.resize()
+    barChart?.resize()
+    operationChart?.resize()
+  }
+  window.addEventListener('resize', resizeHandler)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', resizeHandler)
 })
 </script>
 
@@ -319,5 +310,32 @@ onMounted(() => {
   align-items: center;
 }
 
-.low-stock-text { color: #F56C6C; font-weight: bold; }
+.summary-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 8px 0;
+
+  .summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+
+    .summary-num {
+      font-size: 28px;
+      font-weight: bold;
+      color: #333;
+
+      &.warning { color: #E6A23C; }
+      &.danger { color: #F56C6C; }
+      &.success { color: #67C23A; }
+    }
+
+    .summary-text {
+      font-size: 13px;
+      color: #888;
+    }
+  }
+}
 </style>
