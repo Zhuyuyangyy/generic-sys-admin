@@ -92,7 +92,7 @@ sys:
   config:
     # Security Configuration (JWT + Password)
     security:
-      jwt-secret: ${JWT_SECRET:}
+      jwt-secret: ${JWT_SECRET:dev-secret-do-not-use-in-production-32chars!}
       jwt-expiration: ${JWT_EXPIRATION:7200}
       jwt-refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}
       bcrypt-cost-factor: ${BCRYPT_COST_FACTOR:10}
