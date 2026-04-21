@@ -1,5 +1,5 @@
-// UI Components — Enhanced Galaxy Style
-// Inspired by Uiverse.io Galaxy library
+// UI Components - Enhanced Galaxy Style
+// Re-export all gradient UI components
 
 export { default as GradientButton } from './GradientButton.vue'
 export { default as GradientInput } from './GradientInput.vue'
