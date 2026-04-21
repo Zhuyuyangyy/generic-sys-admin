@@ -25,13 +25,11 @@ export default defineConfig({
   },
   server: {
     port: parseInt(process.env.VITE_PORT || '5173'),
-    host: process.env.VITE_HOST || false,  // 允许外部访问
+    host: process.env.VITE_HOST || false,
     proxy: {
       '/api': {
         target: process.env.VITE_API_TARGET || 'http://localhost:8081',
         changeOrigin: true,
-        // 路径重写：/api/users -> /users（后端已有 /api 前缀）
-        // 如果后端没有 /api 前缀，注释掉 rewrite
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
@@ -39,12 +37,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: process.env.NODE_ENV === 'development',
-    chunkSizeWarningLimit: 2000,  // kB
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'element-plus': ['element-plus'],
-          'vue-core': ['vue', 'vue-router', 'pinia'],
+        manualChunks(id) {
+          if (id.includes('node_modules/element-plus')) return 'element-plus'
+          if (id.includes('node_modules/vue') || id.includes('node_modules/@vue')) return 'vue-core'
         },
       },
     },
