@@ -1,5 +1,6 @@
 # Sensitive config (do not commit)
 backend/src/main/resources/.env
+backend/src/main/resources/application-dev.yml
 
 # Log files
 *.log
