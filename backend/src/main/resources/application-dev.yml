@@ -84,11 +84,12 @@ minio:
 # ==========================================================
 # MiniMax 文档：https://www.minimachat.com/docs/api-reference/t2a-v2
 # ⚠️ 安全提醒：正式部署时 API Key 必须从环境变量注入，禁止硬编码！
+# env: MINIMAX_API_KEY
 minimax:
-  api-url: https://api.us-west-2.modal.direct
-  api-key: ***REMOVED-MINIMAX-API-KEY***
-  app-id: dummy-app-id
-  group-id: dummy-group-id
+  api-url: ${MINIMAX_API_URL:https://api.us-west-2.modal.direct}
+  api-key: ${MINIMAX_API_KEY:}   # ← 必须设置环境变量，禁止硬编码！
+  app-id: ${MINIMAX_APP_ID:dummy-app-id}
+  group-id: ${MINIMAX_GROUP_ID:dummy-group-id}
 
 # ==========================================================
 # 🏆 TTS 模式配置（Mock vs 真实自动切换）
