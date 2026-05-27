@@ -38,3 +38,5 @@ docker-compose.override.yml
 # MemPalace per-project files (issue #185)
 mempalace.yaml
 entities.json
+
+docs/
