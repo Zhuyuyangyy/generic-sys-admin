@@ -46,7 +46,7 @@ def gbk_to_utf8(path):
             print(f'  Already UTF8: {os.path.basename(path)}')
             return
         except:
-            print(f'  Can't decode: {os.path.basename(path)}')
+            print(f"  Can't decode: {os.path.basename(path)}")
             return
     
     # Write as UTF-8 without BOM

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zyy.enums.BusinessType;
 import com.zyy.model.entity.SysOperationLogEntity;
 import com.zyy.service.SysOperationLogService;
-import lombok.RequiredArgsConstructor;
+import com.zyy.websocket.WebSocketService;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -32,11 +32,19 @@ import java.util.Map;
 @Slf4j
 @Aspect
 @Component
-@RequiredArgsConstructor
 public class OperationLogAspect {
 
     private final ObjectMapper objectMapper;
     private final SysOperationLogService operationLogService;
+    private final WebSocketService webSocketService;
+
+    public OperationLogAspect(ObjectMapper objectMapper,
+                              SysOperationLogService operationLogService,
+                              WebSocketService webSocketService) {
+        this.objectMapper = objectMapper;
+        this.operationLogService = operationLogService;
+        this.webSocketService = webSocketService;
+    }
 
     /** 切面：所有 Controller 方法 */
     @Pointcut("execution(* com.zyy..*Controller.*(..))")
@@ -111,6 +119,15 @@ public class OperationLogAspect {
                 operationLogService.saveLog(logEntity);
             } catch (Exception e) {
                 log.error("操作日志保存失败: {}", e.getMessage());
+            }
+
+            // WebSocket实时推送（静默失败不影响主流程）
+            try {
+                String operator = logEntity.getUsername() != null ? logEntity.getUsername() : "unknown";
+                String action = module + "-" + operation;
+                webSocketService.pushOperationLog(operator, action);
+            } catch (Exception e) {
+                log.warn("WebSocket推送操作日志失败: {}", e.getMessage());
             }
 
             // 同时打印到日志（方便调试）
