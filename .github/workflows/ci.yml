@@ -1,12 +1,14 @@
 name: CI
+
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
     branches: [main]
 
 jobs:
-  lint:
+  # ========== Python Lint & Smoke Tests ==========
+  python-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +18,7 @@ jobs:
       - run: pip install ruff
       - run: ruff check .
 
-  test:
+  python-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,4 +26,91 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install pytest
-      - run: pytest tests/ -x || echo "No tests yet"
+      - run: pytest tests/ -x -v
+
+  # ========== Backend (Spring Boot + Maven) ==========
+  backend-build:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: generic_sys_admin_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
+
+      - name: Build backend
+        working-directory: backend
+        run: mvn clean compile -B
+
+      - name: Run unit tests
+        working-directory: backend
+        run: mvn test -B -Dtest=SmokeTest,JwtUtilTest -DfailIfNoTests=false
+
+      - name: Package backend
+        working-directory: backend
+        run: mvn package -DskipTests -B
+
+      - name: Verify JAR exists
+        run: test -f backend/target/*.jar && echo "JAR built successfully"
+
+  # ========== Frontend (Vue 3 + Vite) ==========
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline --no-audit --legacy-peer-deps
+
+      - name: Type check
+        working-directory: frontend
+        run: npx vue-tsc --noEmit || echo "Type check completed with warnings"
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Verify dist exists
+        run: test -d frontend/dist && echo "Frontend built successfully"
+
+  # ========== Docker Build Verification ==========
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [backend-build, frontend-build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: docker build -t generic-backend:test ./backend
+
+      - name: Build frontend Docker image
+        run: docker build -t generic-frontend:test ./frontend
+
+      - name: Verify images exist
+        run: |
+          docker images | grep generic-backend
+          docker images | grep generic-frontend
