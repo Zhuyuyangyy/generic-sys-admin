@@ -40,3 +40,6 @@ mempalace.yaml
 entities.json
 
 docs/
+
+__pycache__/
+*.pyc
