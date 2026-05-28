@@ -94,6 +94,12 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
+        <!-- SpringBoot Actuator (health checks, metrics, monitoring) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Knife4j API文档 -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
