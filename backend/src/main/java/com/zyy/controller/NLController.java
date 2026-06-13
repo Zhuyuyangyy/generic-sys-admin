@@ -25,6 +25,7 @@ import java.util.Map;
 public class NLController {
 
     private final NLService nlService;
+    private final CausalDAGService causalDAGService;
 
     @PostMapping("/execute")
     @Operation(summary = "执行自然语言指令（标准）")
@@ -59,11 +60,9 @@ public class NLController {
     @GetMapping("/causal/dag")
     @Operation(summary = "获取系统因果图拓扑顺序（诊断用）")
     public Result<Map<String, Object>> getDAGInfo() {
-        CausalDAGService dagService = new CausalDAGService();
-        dagService.init();
         return Result.success(Map.of(
-                "nodeCount", dagService.getNodeCount(),
-                "topologicalOrder", dagService.getTopologicalOrder(),
+                "nodeCount", causalDAGService.getNodeCount(),
+                "topologicalOrder", causalDAGService.getTopologicalOrder(),
                 "decayFactor", 0.8
         ));
     }

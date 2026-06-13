@@ -53,6 +53,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/logs/OperationLog.vue'),
         meta: { requiresAuth: true, title: '操作日志' },
       },
+      {
+        path: 'nl',
+        name: 'NLInput',
+        component: () => import('@/views/nl/NLInput.vue'),
+        meta: { requiresAuth: true, title: 'NL Command (Prototype)' },
+      },
     ],
   },
 ]
