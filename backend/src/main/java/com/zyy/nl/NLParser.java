@@ -32,15 +32,16 @@ public class NLParser {
             return new ParseResult(null, List.of(), null, 0.0);
         }
 
-        double confidence;
-        NLIntent intent = detectIntent(input);
+        IntentDetectionResult detection = detectIntent(input);
         List<String> entityIds = extractEntityIds(input);
         String entityType = detectEntityType(input);
 
+        double confidence;
+        NLIntent intent = detection.intent();
         if (intent == null) {
             intent = NLIntent.QUERY;
             confidence = 0.3;
-        } else if (matchedSingleKeyword) {
+        } else if (detection.singleKeyword()) {
             confidence = 0.8;
         } else {
             confidence = 1.0;
@@ -49,10 +50,13 @@ public class NLParser {
         return new ParseResult(intent, entityIds, entityType, confidence);
     }
 
-    private boolean matchedSingleKeyword = false;
+    /**
+     * Intent detection result (immutable, thread-safe).
+     * Replaces the former mutable instance field {@code matchedSingleKeyword}.
+     */
+    private record IntentDetectionResult(NLIntent intent, boolean singleKeyword) {}
 
-    private NLIntent detectIntent(String text) {
-        matchedSingleKeyword = false;
+    private IntentDetectionResult detectIntent(String text) {
         String t = text.toLowerCase();
         int matchCount = 0;
         NLIntent matched = null;
@@ -74,10 +78,9 @@ public class NLParser {
         }
 
         if (matchCount == 0) {
-            return null;
+            return new IntentDetectionResult(null, false);
         }
-        matchedSingleKeyword = (matchCount == 1);
-        return matched;
+        return new IntentDetectionResult(matched, matchCount == 1);
     }
 
     /** 提取所有实体ID */
