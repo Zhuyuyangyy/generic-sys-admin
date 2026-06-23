@@ -7,13 +7,13 @@ spring:
   
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/generic_sys_admin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: ${DB_PASSWORD:123456}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:generic_sys_admin}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
   
   redis:
-    host: localhost
-    port: 6379
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
     password: ${REDIS_PASSWORD:}
     database: 0
     timeout: 3000ms
@@ -22,6 +22,12 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -38,9 +44,9 @@ mybatis-plus:
 
 # JWT配置
 jwt:
-  secret: your-256-bit-secret-key-here-must-be-at-least-32-chars!
-  expiration: 7200
-  refresh-expiration: 604800
+  secret: ${JWT_SECRET:please-change-this-secret-in-production-at-least-32-chars}
+  expiration: ${JWT_EXPIRATION:7200}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}
 
 # Minimax TTS配置
 minimax:

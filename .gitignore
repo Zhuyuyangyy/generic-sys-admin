@@ -1,36 +1,58 @@
-# 敏感配置（禁止提交）
+# =============================================
+# Environment & Secrets (NEVER commit these)
+# =============================================
+.env
+.env.local
+.env.*.local
 backend/src/main/resources/application-dev.yml
 backend/src/main/resources/application-prod.yml
 backend/src/main/resources/.env
 
-# 本地日志和临时文件
-*.log
-*.tmp
-*.swp
-*~
-
-# IDE
+# =============================================
+# IDE & Editor
+# =============================================
 .idea/
 *.iml
 .vscode/
 *.class
+*.swp
+*~
 
-# 构建产物
+# =============================================
+# Build Artifacts
+# =============================================
 backend/target/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
-# 环境密钥相关
-.env
-.env.local
-.env.*.local
-
-# Docker 相关
-docker-compose.override.yml
-
-# 其他
-*.bak
+# =============================================
+# Logs & Temp
+# =============================================
 *.log
+*.tmp
+*.bak
 stderr.log
 stdout.log
+
+# =============================================
+# Docker
+# =============================================
+docker-compose.override.yml
+
+# =============================================
+# OS Files
+# =============================================
+.DS_Store
+Thumbs.db
+
+# =============================================
+# Python (non-product)
+# =============================================
+__pycache__/
+*.pyc
+
+# =============================================
+# Experiment / Non-product outputs
+# =============================================
+experiment_results/

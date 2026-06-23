@@ -1,0 +1,55 @@
+server:
+  port: 0
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+
+  flyway:
+    enabled: false
+
+  redis:
+    host: localhost
+    port: 6379
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.zyy.**.model
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+
+jwt:
+  secret: test-secret-key-for-integration-testing-minimum-32-chars
+  expiration: 7200
+  refresh-expiration: 604800
+
+minimax:
+  api-url: https://api.minimax.chat
+  app-id: ""
+  api-key: ""
+  group-id: ""
+
+app:
+  security:
+    bcrypt-cost-factor: 4
+    max-failed-attempts: 5
+    lockout-minutes: 30
+    jwt-expiration: 7200
+
+logging:
+  level:
+    root: WARN
+    com.zyy: DEBUG
