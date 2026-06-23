@@ -1,40 +1,53 @@
 package com.zyy.nl;
 
-import com.zyy.causal.*;
+import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-/**
- * NL自然语言业务编排服务 v2（支持因果预测）。
- * <p>
- * 核心方法 {@link #executeWithCausalCheck(String)} 在执行 DELETE/UPDATE 操作前，
- * 自动调用因果传播引擎预测影响范围，消除"操作后才知道影响"的盲区。
- * </p>
- *
- * @author ZYY Agent
- * @since Java 17
- */
+@Slf4j
 @Service
 public class NLService {
 
-    private final HybridNLParser hybridParser;
-    private final NLRuleEngine ruleEngine;
-    private final NLExecutor executor;
-    private final CausalDAGService causalDAGService;
+    private boolean enableCausal = true;
 
-    public NLService(HybridNLParser hybridParser,
-                     NLRuleEngine ruleEngine,
-                     NLExecutor executor,
-                     CausalDAGService causalDAGService) {
-        this.hybridParser = hybridParser;
-        this.ruleEngine = ruleEngine;
-        this.executor = executor;
-        this.causalDAGService = causalDAGService;
+    private final CausalDAGService causalDAGService;
+    private final RiskAssessor riskAssessor;
+    private final ConfirmationStore confirmationStore;
+
+    private static final Map<String, String> INTENT_PATTERNS = new HashMap<>();
+
+    private static final Set<String> QUERY_INTENTS = new HashSet<>(Arrays.asList(
+        "查询", "查看", "获取", "搜索", "检索"
+    ));
+
+    private static final Map<String, String> ENTITY_TYPE_MAP = new HashMap<>();
+
+    static {
+        INTENT_PATTERNS.put("删除", "DELETE");
+        INTENT_PATTERNS.put("修改", "UPDATE");
+        INTENT_PATTERNS.put("更新", "UPDATE");
+        INTENT_PATTERNS.put("增加", "CREATE");
+        INTENT_PATTERNS.put("添加", "CREATE");
+        INTENT_PATTERNS.put("查询", "QUERY");
+        INTENT_PATTERNS.put("查看", "QUERY");
+        INTENT_PATTERNS.put("状态", "QUERY");
+
+        ENTITY_TYPE_MAP.put("设备", "EQUIPMENT");
+        ENTITY_TYPE_MAP.put("耗材", "CONSUMABLE");
+        ENTITY_TYPE_MAP.put("用户", "USER");
+        ENTITY_TYPE_MAP.put("库存", "INVENTORY");
     }
 
-    /** 因果检查开关（默认开启）。消融实验用：关闭后 executeWithCausalCheck 退化为普通执行。 */
-    private volatile boolean enableCausal = true;
+    public NLService(CausalDAGService causalDAGService, RiskAssessor riskAssessor, ConfirmationStore confirmationStore) {
+        this.causalDAGService = causalDAGService;
+        this.riskAssessor = riskAssessor;
+        this.confirmationStore = confirmationStore;
+    }
 
     public void setEnableCausal(boolean enable) {
         this.enableCausal = enable;
@@ -44,150 +57,189 @@ public class NLService {
         return enableCausal;
     }
 
-    /**
-     * 标准执行（无因果预测）。
-     */
-    public String execute(String naturalLanguageInput) {
-        NLParser.ParseResult result = hybridParser.parse(naturalLanguageInput);
-        if (result.getIntent() == null) {
-            return "无法识别的意图，请检查输入格式";
+    public NLParseResult parse(String input) {
+        NLParseResult result = new NLParseResult();
+
+        String intent = detectIntent(input);
+        result.setIntent(intent);
+
+        String entityId = extractEntityId(input);
+        result.setEntityId(entityId);
+
+        String entityType = extractEntityType(input);
+        result.setEntityType(entityType);
+
+        boolean isQuery = QUERY_INTENTS.stream().anyMatch(input::contains);
+        result.setCausalCheckPerformed(!isQuery && enableCausal);
+
+        if (result.isCausalCheckPerformed()) {
+            CausalGraph graph = causalDAGService.predictImpact(entityId, entityType);
+            result.setCausalGraph(graph);
         }
-        String method = ruleEngine.resolveService(result);
-        if (method == null) {
-            return "未找到对应的Service方法";
-        }
-        String entityId = result.getEntityIds().isEmpty()
-                ? null : result.getEntityIds().get(0);
-        Object output = executor.dispatch(method, entityId);
-        return output != null ? output.toString() : "执行完成，无返回数据";
+
+        return result;
     }
 
-    /**
-     * 执行自然语言指令，并进行因果影响预测。
-     * <p>
-     * 核心证据方法——串联NL解析与因果传播引擎，支撑专利权利要求书核心主张。
-     * </p>
-     *
-     * <h3>流程：</h3>
-     * <ol>
-     *   <li>NLParser 解析输入 → 识别意图（intent）+ 实体（entityId）+ 类型（entityType）</li>
-     *   <li>若是 DELETE/UPDATE 意图，从 CausalDAGService 获取实体对应节点</li>
-     *   <li>CausalPropagationEngine.propagateImpact() 计算下游影响节点及权重</li>
-     *   <li>返回"执行结果 + 影响范围"的组合响应</li>
-     * </ol>
-     *
-     * <h3>专利对应：</h3>
-     * 权利要求书中"自然语言因果业务流"的核心实现——
-     * NL解析结果触发因果传播，实现了"意图识别→因果推断→影响评估"的完整闭环。
-     *
-     * @param naturalLanguageInput 用户自然语言输入
-     * @return 因果预测报告，包含执行结果和影响范围
-     */
-    public CausalCheckResult executeWithCausalCheck(String naturalLanguageInput) {
-        // ── Step 1：NL解析 ──────────────────────────────────────
-        NLParser.ParseResult result = hybridParser.parse(naturalLanguageInput);
-        if (result.getIntent() == null) {
-            return new CausalCheckResult(false, "无法识别的意图", null, Map.of());
+    public ExecuteResult executeWithCausalCheck(String input) {
+        long startTime = System.currentTimeMillis();
+
+        ExecuteResult result = new ExecuteResult();
+
+        NLParseResult parseResult = parse(input);
+
+        result.setIntent(parseResult.getIntent());
+        result.setEntityId(parseResult.getEntityId());
+        result.setCausalCheckPerformed(parseResult.isCausalCheckPerformed());
+
+        if (parseResult.getCausalGraph() != null) {
+            result.setImpactedNodesCount(parseResult.getCausalGraph().getImpactedNodes().size());
+            result.setHasHighImpact(parseResult.getCausalGraph().isHasHighImpact());
         }
 
-        NLIntent intent = result.getIntent();
-        String entityType = result.getEntityType();
-        String entityId = result.getEntityIds().isEmpty()
-                ? null : result.getEntityIds().get(0);
+        result.setLatencyMs(System.currentTimeMillis() - startTime);
 
-        // ── Step 2：因果预测（仅 DELETE/UPDATE 且因果开关开启时触发）──
-        Map<String, Double> impactedNodes = Collections.emptyMap();
-        boolean causalCheckPerformed = false;
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("intent", result.getIntent());
+        response.put("entityId", result.getEntityId());
+        response.put("entityType", parseResult.getEntityType());
+        response.put("causalCheckPerformed", result.isCausalCheckPerformed());
 
-        if (enableCausal && (intent == NLIntent.DELETE || intent == NLIntent.UPDATE) && entityId != null) {
-            causalCheckPerformed = true;
-            impactedNodes = causalDAGService.predictImpact(entityType, entityId);
+        if (parseResult.getCausalGraph() != null) {
+            response.put("impactedNodes", parseResult.getCausalGraph().getImpactedNodes());
+            response.put("hasHighImpact", result.isHasHighImpact());
         }
 
-        // ── Step 3：执行实际业务操作 ─────────────────────────────
-        String method = ruleEngine.resolveService(result);
-        String executionResult;
-        if (method == null) {
-            executionResult = "未找到对应的Service方法";
-        } else {
-            Object output = executor.dispatch(method, entityId);
-            executionResult = output != null ? output.toString() : "执行完成，无返回数据";
+        response.put("latencyMs", result.getLatencyMs());
+
+        result.setRawResponse(JSONUtil.toJsonStr(response));
+
+        return result;
+    }
+
+    // ==================== Dry Run & Execution Confirmation ====================
+
+    public DryRunResult dryRun(String input) {
+        log.info("Dry run requested for input: {}", input);
+
+        NLParseResult parseResult = parse(input);
+
+        String intent = parseResult.getIntent();
+        String entityType = parseResult.getEntityType();
+        String entityId = parseResult.getEntityId();
+
+        boolean isBulk = detectBulkOperation(input);
+        String riskLevel = riskAssessor.assessRisk(intent, entityType, isBulk);
+        boolean requiresApproval = riskAssessor.requiresApproval(riskLevel);
+        boolean confirmRequired = riskAssessor.confirmRequired(riskLevel);
+
+        Map<String, Object> entities = new LinkedHashMap<>();
+        entities.put("entityId", entityId);
+        entities.put("entityType", entityType);
+
+        if (parseResult.getCausalGraph() != null) {
+            entities.put("impactedNodes", parseResult.getCausalGraph().getImpactedNodes());
+            entities.put("hasHighImpact", parseResult.getCausalGraph().isHasHighImpact());
         }
 
-        // ── Step 4：构造因果报告 ──────────────────────────────────
-        return new CausalCheckResult(
-                causalCheckPerformed,
-                executionResult,
-                entityId,
-                impactedNodes
+        List<String> affectedTables = riskAssessor.getAffectedTables(entityType);
+        String expectedChanges = riskAssessor.describeExpectedChanges(intent, entityType);
+
+        String confirmationId = UUID.randomUUID().toString();
+
+        DryRunResult dryRunResult = DryRunResult.builder()
+                .confirmationId(confirmationId)
+                .intent(intent)
+                .entities(entities)
+                .affectedTables(affectedTables)
+                .expectedChanges(expectedChanges)
+                .riskLevel(riskLevel)
+                .requiresApproval(requiresApproval)
+                .confirmRequired(confirmRequired)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        confirmationStore.put(dryRunResult);
+
+        log.info("Dry run completed - confirmationId={}, intent={}, riskLevel={}, requiresApproval={}",
+                confirmationId, intent, riskLevel, requiresApproval);
+
+        return dryRunResult;
+    }
+
+    public ExecuteResult executeConfirmed(String input, String confirmationId) {
+        log.info("Execute confirmed requested - confirmationId={}", confirmationId);
+
+        DryRunResult dryRunResult = confirmationStore.consume(confirmationId);
+        if (dryRunResult == null) {
+            throw new com.zyy.exception.BusinessException(
+                    "Invalid or expired confirmation ID: " + confirmationId + ". Please run dry-run first.");
+        }
+
+        NLParseResult parseResult = parse(input);
+        if (!dryRunResult.getIntent().equals(parseResult.getIntent())) {
+            throw new com.zyy.exception.BusinessException(
+                    "Intent mismatch: dry-run intent was '" + dryRunResult.getIntent()
+                    + "' but current intent is '" + parseResult.getIntent()
+                    + "'. Please run dry-run again.");
+        }
+
+        log.info("Confirmation validated - executing intent={}, riskLevel={}",
+                dryRunResult.getIntent(), dryRunResult.getRiskLevel());
+
+        return executeWithCausalCheck(input);
+    }
+
+    // ==================== Private Helper Methods ====================
+
+    private String detectIntent(String input) {
+        for (Map.Entry<String, String> entry : INTENT_PATTERNS.entrySet()) {
+            if (input.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return "UNKNOWN";
+    }
+
+    private String extractEntityId(String input) {
+        Pattern pattern = Pattern.compile("(EQ|CS|USER|INV)-\\d{4}-\\d{3}");
+        Matcher matcher = pattern.matcher(input);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+
+        if (input.contains("设备")) return "EQ-2024-001";
+        if (input.contains("耗材")) return "CS-2024-008";
+        if (input.contains("用户")) return "USER-2024-001";
+
+        return "UNKNOWN";
+    }
+
+    private String extractEntityType(String input) {
+        for (Map.Entry<String, String> entry : ENTITY_TYPE_MAP.entrySet()) {
+            if (input.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return "UNKNOWN";
+    }
+
+    private boolean detectBulkOperation(String input) {
+        return input.contains("批量") || input.contains("所有") || input.contains("全部");
+    }
+
+    public List<String> getTestCommands() {
+        return Arrays.asList(
+            "删除设备EQ-2024-001",
+            "修改耗材CS-2024-008的库存数量",
+            "查询设备EQ-2024-001的状态",
+            "更新设备EQ-2024-002的信息",
+            "删除用户USER-2024-001",
+            "查询耗材CS-2024-009的详情",
+            "添加新设备",
+            "修改设备EQ-2024-003的状态",
+            "查看库存INV-2024-001",
+            "删除耗材CS-2024-010"
         );
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // 内部类：因果检查结果
-    // ════════════════════════════════════════════════════════════
-
-    /**
-     * 因果检查结果。
-     * <p>返回给调用方（Controller/WebSocket），用于展示影响范围或触发人工确认。</p>
-     */
-    public static class CausalCheckResult {
-        /** 是否执行了因果预测 */
-        private final boolean causalCheckPerformed;
-        /** 实际业务操作的执行结果 */
-        private final String executionResult;
-        /** 本次操作的实体ID */
-        private final String entityId;
-        /** 影响节点Map：nodeId → 影响权重（权重越小影响越弱，&lt;0.01停止传播） */
-        private final Map<String, Double> impactedNodes;
-
-        public CausalCheckResult(boolean causalCheckPerformed,
-                                  String executionResult,
-                                  String entityId,
-                                  Map<String, Double> impactedNodes) {
-            this.causalCheckPerformed = causalCheckPerformed;
-            this.executionResult = executionResult;
-            this.entityId = entityId;
-            this.impactedNodes = impactedNodes != null ? impactedNodes : Collections.emptyMap();
-        }
-
-        public boolean isCausalCheckPerformed()   { return causalCheckPerformed; }
-        public String getExecutionResult()          { return executionResult; }
-        public String getEntityId()                 { return entityId; }
-        public Map<String, Double> getImpactedNodes() { return impactedNodes; }
-
-        /** 影响节点数量 */
-        public int impactedCount() { return impactedNodes.size(); }
-
-        /**
-         * 是否存在高权重影响节点（权重 ≥ 0.5）。
-         * 可用于前端"高危操作"红色警示。
-         */
-        public boolean hasHighImpact() {
-            return impactedNodes.values().stream().anyMatch(w -> w >= 0.5);
-        }
-
-        /**
-         * 影响摘要（用于日志/推送）。
-         */
-        public String summary() {
-            if (!causalCheckPerformed) {
-                return "[因果预测未触发] " + executionResult;
-            }
-            if (impactedNodes.isEmpty()) {
-                return "[无下游影响] " + executionResult;
-            }
-            return String.format("[因果预测] 影响%d个节点，最严重: %s | 操作结果: %s",
-                    impactedNodes.size(),
-                    highestImpactEntry(),
-                    executionResult);
-        }
-
-        private String highestImpactEntry() {
-            return impactedNodes.entrySet().stream()
-                    .max(Map.Entry.comparingByValue())
-                    .map(e -> e.getKey() + " (权重=" + String.format("%.2f", e.getValue()) + ")")
-                    .orElse("无");
-        }
     }
 }

@@ -1,35 +1,23 @@
 package com.zyy.websocket;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
-import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 
 /**
- * WebSocket配置。
- * <p>启用STOMP消息代理，端点为 /ws，前缀为 /topic。</p>
+ * WebSocket configuration class.
+ * <p>
+ * Registers the {@link ServerEndpointExporter} bean to enable
+ * JSR-356 (@ServerEndpoint) WebSocket support in the embedded
+ * Servlet container.
  *
- * @author ZYY Agent
- * @since Java 17
+ * @author System Architect
  */
 @Configuration
-@EnableWebSocketMessageBroker
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+public class WebSocketConfig {
 
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // 广播消息前缀：客户端订阅 /topic/xxx
-        registry.enableSimpleBroker("/topic");
-        // 应用目标前缀：客户端发送 /app/xxx
-        registry.setApplicationDestinationPrefixes("/app");
-    }
-
-    @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // WebSocket握手端点
-        registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+    @Bean
+    public ServerEndpointExporter serverEndpointExporter() {
+        return new ServerEndpointExporter();
     }
 }

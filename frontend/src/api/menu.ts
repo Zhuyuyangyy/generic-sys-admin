@@ -1,31 +1,56 @@
 /**
- * 菜单模块 API
- * @description 动态菜单查询接口封装
+ * 菜单管理模块 API
+ * @description 菜单树增删改查接口封装
  */
 import request from '@/utils/request'
-import type { Result } from '@/utils/types'
+import type { MenuVO } from '@/utils/types'
 
 /**
- * 菜单视图对象
+ * 菜单新增/编辑请求参数
  */
-export interface SysMenuVO {
-  id: number
-  parentId: number
+export interface MenuSaveDTO {
+  parentId?: number
   name: string
-  path: string
-  component: string
-  icon: string
-  sortOrder: number
-  visible: number
-  permission: string
-  menuType: number
-  status: number
-  createTime: string
-  children: SysMenuVO[]
+  path?: string
+  component?: string
+  icon?: string
+  sort?: number
+  visible?: boolean
+  type?: number
+  permission?: string
 }
 
 /**
- * 获取当前用户动态菜单树
+ * 获取菜单树
  */
-export const getCurrentUserMenus = (): Promise<SysMenuVO[]> =>
-  request.get<SysMenuVO[]>('/menus/current') as unknown as Promise<SysMenuVO[]>
+export const getMenuTree = (): Promise<MenuVO[]> =>
+  request.get<MenuVO[]>('/menus') as unknown as Promise<MenuVO[]>
+
+/**
+ * 根据 ID 查询菜单详情
+ * @param id - 菜单唯一标识
+ */
+export const getMenu = (id: number): Promise<MenuVO> =>
+  request.get<MenuVO>(`/menus/${id}`) as unknown as Promise<MenuVO>
+
+/**
+ * 新增菜单
+ * @param data - 菜单信息
+ */
+export const createMenu = (data: MenuSaveDTO): Promise<MenuVO> =>
+  request.post<MenuVO>('/menus', data) as unknown as Promise<MenuVO>
+
+/**
+ * 更新菜单信息
+ * @param id - 菜单唯一标识
+ * @param data - 更新后的菜单信息
+ */
+export const updateMenu = (id: number, data: MenuSaveDTO): Promise<MenuVO> =>
+  request.put<MenuVO>(`/menus/${id}`, data) as unknown as Promise<MenuVO>
+
+/**
+ * 删除菜单
+ * @param id - 菜单唯一标识
+ */
+export const deleteMenu = (id: number): Promise<void> =>
+  request.delete<void>(`/menus/${id}`) as unknown as Promise<void>

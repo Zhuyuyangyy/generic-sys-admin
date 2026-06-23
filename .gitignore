@@ -1,42 +1,58 @@
-# Sensitive config (do not commit)
-backend/src/main/resources/.env
+# =============================================
+# Environment & Secrets (NEVER commit these)
+# =============================================
+.env
+.env.local
+.env.*.local
 backend/src/main/resources/application-dev.yml
+backend/src/main/resources/application-prod.yml
+backend/src/main/resources/.env
 
-# Log files
-*.log
-*.tmp
-*.swp
-*~
-logs/
-stderr.log
-stdout.log
-
-# IDE
+# =============================================
+# IDE & Editor
+# =============================================
 .idea/
 *.iml
 .vscode/
 *.class
+*.swp
+*~
 
-# Build artifacts
+# =============================================
+# Build Artifacts
+# =============================================
 backend/target/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
-# Environment files (do NOT commit real configs)
-.env
-.env.local
-.env.*.local
-!.env.example
+# =============================================
+# Logs & Temp
+# =============================================
+*.log
+*.tmp
+*.bak
+stderr.log
+stdout.log
 
+# =============================================
 # Docker
+# =============================================
 docker-compose.override.yml
 
-# Backup
-*.bak
+# =============================================
+# OS Files
+# =============================================
+.DS_Store
+Thumbs.db
 
-# MemPalace per-project files (issue #185)
-mempalace.yaml
-entities.json
+# =============================================
+# Python (non-product)
+# =============================================
+__pycache__/
+*.pyc
 
-docs/
+# =============================================
+# Experiment / Non-product outputs
+# =============================================
+experiment_results/

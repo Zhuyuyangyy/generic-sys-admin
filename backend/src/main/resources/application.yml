@@ -1,58 +1,37 @@
-# ===================================================================
-# Generic Sys Admin - Application Configuration
-# ===================================================================
-# All sensitive values are externalized via environment variables.
-# Use ${ENV_VAR:default_value} syntax for secure configuration binding.
-# ===================================================================
-
 server:
-  port: ${SERVER_PORT:8081}
-  servlet:
-    context-path: /
+  port: 8080
 
 spring:
   application:
     name: generic-sys-admin
-
-  # Database Configuration
+  
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:generic_sys_admin}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-
-  # Redis Configuration
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      database: ${REDIS_DB:0}
-      timeout: 3000ms
-      lettuce:
-        pool:
-          max-active: 16
-          max-idle: 8
-          min-idle: 4
-
-  # File Upload Configuration
+  
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 3000ms
+  
   servlet:
     multipart:
-      max-file-size: ${FILE_MAX_SIZE:100MB}
-      max-request-size: ${REQUEST_MAX_SIZE:100MB}
+      max-file-size: 10MB
+      max-request-size: 10MB
 
-# ===================================================================
-# MyBatis-Plus Configuration
-# ===================================================================
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
+
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: com.zyy.model.entity
+  type-aliases-package: com.zyy.**.model
   global-config:
     db-config:
       id-type: auto
@@ -63,103 +42,24 @@ mybatis-plus:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
-# ===================================================================
-# MinIO Configuration (for MinioConfig direct injection)
-# ===================================================================
-minio:
-  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-  access-key: ${MINIO_ACCESS_KEY:minioadmin}
-  secret-key: ${MINIO_SECRET_KEY:minioadmin}
-  bucket-name: ${MINIO_BUCKET:generic-sys-admin}
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:please-change-this-secret-in-production-at-least-32-chars}
+  expiration: ${JWT_EXPIRATION:7200}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}
 
-storage:
-  provider: ${STORAGE_PROVIDER:auto}
-  local:
-    base-dir: ${STORAGE_LOCAL_BASE_DIR:#{systemProperties['user.home']}}
-    sub-dir: ${STORAGE_LOCAL_SUB_DIR:.generic-sys-admin/uploads}
-
+# Minimax TTS配置
 minimax:
-  api-url: ${MINIMAX_API_URL:https://api.minimax.chat}
+  api-url: https://api.minimax.chat
   app-id: ${MINIMAX_APP_ID:}
   api-key: ${MINIMAX_API_KEY:}
   group-id: ${MINIMAX_GROUP_ID:}
-  vcn: ${MINIMAX_VCN:female_tianmei}
 
-# ===================================================================
-# Unified Application Configuration (AppProperties)
-# ===================================================================
-sys:
-  config:
-    # Security Configuration (JWT + Password)
-    security:
-      jwt-secret: ${JWT_SECRET:dev-secret-do-not-use-in-production-32chars!}
-      jwt-expiration: ${JWT_EXPIRATION:7200}
-      jwt-refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}
-      bcrypt-cost-factor: ${BCRYPT_COST_FACTOR:10}
-      max-failed-attempts: ${MAX_FAILED_ATTEMPTS:5}
-      lockout-minutes: ${LOCKOUT_MINUTES:30}
-
-    # Storage Configuration (MinIO/S3)
-    storage:
-      endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-      access-key: ${MINIO_ACCESS_KEY:}
-      secret-key: ${MINIO_SECRET_KEY:}
-      bucket-name: ${MINIO_BUCKET:generic-sys-admin}
-      presigned-url-expiration: 3600
-      path-style-access: true
-
-    # AI Service Configuration
-    ai:
-      minimax:
-        api-url: ${MINIMAX_API_URL:https://api.minimax.chat}
-        app-id: ${MINIMAX_APP_ID:}
-        api-key: ${MINIMAX_API_KEY:}
-        group-id: ${MINIMAX_GROUP_ID:}
-        vcn: female_tianmei
-
-    # Application Toggles
-    app:
-      demo-mode: ${DEMO_MODE:false}
-      audit-enabled: ${AUDIT_ENABLED:true}
-      doc-enabled: ${DOC_ENABLED:true}
-
-# ===================================================================
-# API Documentation (Knife4j + SpringDoc)
-# ===================================================================
-springdoc:
-  api-docs:
-    path: /api-docs
-    enabled: true
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: true
-
-knife4j:
-  enable: true
-  setting:
-    language: zh_cn
-
-# ===================================================================
-# Actuator & Monitoring
-# ===================================================================
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: when-authorized
-
-# ===================================================================
-# Logging Configuration
-# ===================================================================
+# 日志配置
 logging:
   level:
     root: INFO
     com.zyy: DEBUG
     com.zyy.aspect: DEBUG
-    com.zyy.mapper: ${LOG_LEVEL_MAPPER:info}
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

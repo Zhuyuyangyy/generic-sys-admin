@@ -1,42 +1,46 @@
-# ========== Backend Dockerfile - Multi-stage build ==========
-# 阶段一：构建
-FROM maven:3.9-eclipse-temurin-17-alpine AS builder
+# =============================================
+# Spring Boot Backend Dockerfile
+# Multi-stage build for optimized production image
+# =============================================
+
+# Stage 1: Build stage
+FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
-# 复制 pom.xml 先下载依赖（利用 Docker 缓存层）
+# Copy pom.xml first for dependency caching
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
-# 复制源码并构建
+# Copy source code and build
 COPY src ./src
 RUN mvn clean package -DskipTests -B
 
-# ========== 阶段二：运行 ==========
+# Stage 2: Runtime stage
 FROM eclipse-temurin:17-jre-alpine
 
-# 安装 wget（健康检查需要）
-RUN apk add --no-cache wget
-
-# 创建非 root 用户（安全最佳实践）
+# Create non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
-# 复制构建产物
+# Copy only the built artifact
 COPY --from=builder /app/target/*.jar app.jar
 
-# 创建日志目录
-RUN mkdir -p logs && chown -R appuser:appgroup /app
+# Set ownership
+RUN chown -R appuser:appgroup /app
 
+# Switch to non-root user
 USER appuser
 
-# 健康检查
-# 使用 Spring Boot Actuator 健康端点
-HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
-  CMD wget -q --spider http://localhost:8081/actuator/health || exit 1
+# Expose application port
+EXPOSE 8080
 
-EXPOSE 8081
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
 
-# JVM 调优参数
-ENTRYPOINT ["java", "-jar", "-Xms256m", "-Xmx512m", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=200", "app.jar"]
+# JVM optimization for containers
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

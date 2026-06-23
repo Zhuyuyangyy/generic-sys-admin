@@ -1,218 +1,173 @@
 <template>
-  <div class="login-page">
-    <!-- Background decoration -->
-    <div class="bg-orb bg-orb-1"></div>
-    <div class="bg-orb bg-orb-2"></div>
-    <div class="bg-orb bg-orb-3"></div>
-
-    <!-- Login card -->
-    <GradientCard class="login-card" variant="glass">
-      <template #header>
-        <div class="login-header">
-          <div class="login-logo">
-            <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="14" fill="url(#logoGrad)"/>
-              <path d="M14 24 L24 14 L34 24 L24 34 Z" fill="white" opacity="0.9"/>
-              <defs>
-                <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="48">
-                  <stop offset="0%" stop-color="#667eea"/>
-                  <stop offset="100%" stop-color="#764ba2"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          <span class="login-title">通用管理系统</span>
-          <span class="login-subtitle">Graduation Project · 毕业设计管理系统</span>
-        </div>
-      </template>
-
-      <form class="login-form" @submit.prevent="handleLogin">
-        <GradientInput
-          v-model="form.username"
-          label="用户名"
-          placeholder="请输入用户名"
-          :error="errors.username"
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo-icon">E</div>
+        <h1 class="brand-title">ERMS</h1>
+        <p class="brand-subtitle">Enterprise Resource Management System</p>
+      </div>
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="0" class="login-form">
+        <el-form-item prop="username">
+          <el-input
+            v-model="form.username"
+            placeholder="用户名"
+            prefix-icon="User"
+            size="large"
+            @keyup.enter="handleLogin"
+          />
+        </el-form-item>
+        <el-form-item prop="password">
+          <el-input
+            v-model="form.password"
+            type="password"
+            placeholder="密码"
+            prefix-icon="Lock"
+            size="large"
+            show-password
+            @keyup.enter="handleLogin"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+        </el-form-item>
+        <el-alert
+          v-if="errorMsg"
+          :title="errorMsg"
+          type="error"
+          show-icon
+          :closable="true"
+          @close="errorMsg = ''"
+          style="margin-bottom: 16px;"
         />
-
-        <GradientInput
-          v-model="form.password"
-          label="密码"
-          type="password"
-          placeholder="请输入密码"
-          :error="errors.password"
-        />
-
-        <GradientToggle v-model="remember" label="记住登录状态" />
-
-        <GradientButton
-          type="submit"
-          variant="primary"
-          size="lg"
-          :loading="loading"
-          style="width: 100%; margin-top: 8px;"
-        >
-          登 录
-        </GradientButton>
-      </form>
-
-      <template #footer>
-        <div class="login-footer">
-          <span class="footer-hint">默认账号：admin / admin123</span>
-        </div>
-      </template>
-    </GradientCard>
+        <el-form-item>
+          <el-button
+            type="primary"
+            size="large"
+            style="width: 100%;"
+            :loading="loading"
+            @click="handleLogin"
+          >
+            登 录
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+    <div class="login-footer">ERMS v1.0 &copy; 2024</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
-import { GradientCard, GradientInput, GradientButton, GradientToggle } from '@/components/ui'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const form = reactive({ username: '', password: '' })
-const errors = reactive({ username: '', password: '' })
+const form = ref({ username: '', password: '' })
 const loading = ref(false)
-const remember = ref(false)
+const formRef = ref()
+const rememberMe = ref(false)
+const errorMsg = ref('')
+
+const rules = {
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+}
 
 const handleLogin = async () => {
-  // Clear errors
-  errors.username = ''
-  errors.password = ''
-
-  // Validate
-  if (!form.username.trim()) {
-    errors.username = '请输入用户名'
-    return
-  }
-  if (!form.password.trim()) {
-    errors.password = '请输入密码'
-    return
-  }
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
 
   loading.value = true
+  errorMsg.value = ''
   try {
-    await userStore.login(form.username, form.password)
-    ElMessage.success('登录成功，欢迎回来！')
+    await userStore.login(form.value.username, form.value.password)
+    if (rememberMe.value) {
+      localStorage.setItem('remembered_user', form.value.username)
+    } else {
+      localStorage.removeItem('remembered_user')
+    }
+    ElMessage.success('登录成功')
     router.push('/dashboard')
-  } catch {
-    // handled by interceptor
+  } catch (err: any) {
+    errorMsg.value = err?.message || '登录失败，请检查用户名和密码'
   } finally {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  const saved = localStorage.getItem('remembered_user')
+  if (saved) {
+    form.value.username = saved
+    rememberMe.value = true
+  }
+})
 </script>
 
-<style scoped>
-.login-page {
-  min-height: 100vh;
+<style scoped lang="scss">
+.login-container {
+  height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-  position: relative;
-  overflow: hidden;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  flex-direction: column;
+  background: linear-gradient(135deg, #0d1b3e 0%, #1a3a6b 50%, #0f2855 100%);
 }
 
-/* Background orbs */
-.bg-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.bg-orb-1 {
-  width: 500px;
-  height: 500px;
-  background: #667eea;
-  top: -150px;
-  left: -100px;
-  animation: float 8s ease-in-out infinite;
-}
-
-.bg-orb-2 {
-  width: 400px;
-  height: 400px;
-  background: #764ba2;
-  bottom: -100px;
-  right: -80px;
-  animation: float 10s ease-in-out infinite reverse;
-}
-
-.bg-orb-3 {
-  width: 300px;
-  height: 300px;
-  background: #06b6d4;
-  top: 50%;
-  left: 60%;
-  transform: translate(-50%, -50%);
-  animation: float 12s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0); }
-  33% { transform: translate(20px, -20px); }
-  66% { transform: translate(-15px, 15px); }
-}
-
-/* Card */
 .login-card {
   width: 420px;
-  max-width: 95vw;
-  position: relative;
-  z-index: 10;
+  background: #fff;
+  border-radius: 12px;
+  padding: 40px 36px 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-/* Header */
 .login-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  text-align: center;
+  margin-bottom: 32px;
+
+  .logo-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #1a3a6b, #2d5aa0);
+    color: #fff;
+    font-size: 32px;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+
+  .brand-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a3a6b;
+    margin: 0 0 4px;
+    letter-spacing: 4px;
+  }
+
+  .brand-subtitle {
+    font-size: 12px;
+    color: #8c939d;
+    margin: 0;
+    letter-spacing: 1px;
+  }
 }
 
-.login-logo {
-  margin-bottom: 4px;
-}
-
-.login-title {
-  font-size: 22px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: 0.02em;
-}
-
-.login-subtitle {
-  font-size: 12px;
-  color: #94a3b8;
-  letter-spacing: 0.04em;
-}
-
-/* Form */
 .login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  :deep(.el-input__wrapper) {
+    border-radius: 8px;
+  }
 }
 
-/* Footer */
 .login-footer {
-  display: flex;
-  justify-content: center;
-}
-
-.footer-hint {
+  margin-top: 24px;
+  color: rgba(255, 255, 255, 0.5);
   font-size: 12px;
-  color: #94a3b8;
 }
 </style>

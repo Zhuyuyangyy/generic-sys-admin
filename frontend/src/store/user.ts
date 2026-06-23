@@ -9,15 +9,14 @@ import { login as apiLogin, logout as apiLogout, getCurrentUser, type LoginVO, t
 export const useUserStore = defineStore(
   'user',
   () => {
-    /** 访问令牌（JWT） */
+    /** 访问令牌（JWT），用于接口认证 */
     const token = ref(localStorage.getItem('access_token') || '')
-    /** 刷新令牌（JWT） */
-    const refreshToken = ref(localStorage.getItem('refresh_token') || '')
     /** 当前登录用户资料 */
     const userInfo = ref<UserVO | null>(null)
 
     /**
      * 设置访问令牌
+     * @param t - JWT 令牌字符串
      */
     const setToken = (t: string) => {
       token.value = t
@@ -25,15 +24,8 @@ export const useUserStore = defineStore(
     }
 
     /**
-     * 设置刷新令牌
-     */
-    const setRefreshToken = (t: string) => {
-      refreshToken.value = t
-      localStorage.setItem('refresh_token', t)
-    }
-
-    /**
      * 设置用户资料
+     * @param info - 用户视图对象
      */
     const setUserInfo = (info: UserVO) => {
       userInfo.value = info
@@ -41,17 +33,20 @@ export const useUserStore = defineStore(
 
     /**
      * 用户登录
+     * @param username - 用户名
+     * @param password - 密码
+     * @returns 登录响应数据（包含 Token 及用户信息）
      */
     const login = async (username: string, password: string) => {
       const data = await apiLogin({ username, password })
       setToken(data.accessToken)
-      setRefreshToken(data.refreshToken)
       setUserInfo(data.user)
       return data
     }
 
     /**
      * 获取并同步用户资料
+     * @description 从后端拉取最新用户资料并更新本地状态
      */
     const fetchUserInfo = async () => {
       try {
@@ -64,23 +59,19 @@ export const useUserStore = defineStore(
 
     /**
      * 用户退出登录
-     * @description 清除本地所有 Token 及用户资料，触发路由跳转由调用方控制
+     * @description 清除本地 Token 及用户资料，触发路由跳转由调用方控制
      */
     const logout = () => {
       token.value = ''
-      refreshToken.value = ''
       userInfo.value = null
       localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
       apiLogout()
     }
 
     return {
       token,
-      refreshToken,
       userInfo,
       setToken,
-      setRefreshToken,
       setUserInfo,
       login,
       fetchUserInfo,

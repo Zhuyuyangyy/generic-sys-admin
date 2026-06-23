@@ -24,26 +24,16 @@ export default defineConfig({
     },
   },
   server: {
-    port: parseInt(process.env.VITE_PORT || '5173'),
-    host: process.env.VITE_HOST || false,
+    port: 5173,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_TARGET || 'http://localhost:8081',
+        target: 'http://localhost:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
-    },
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: process.env.NODE_ENV === 'development',
-    chunkSizeWarningLimit: 2000,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules/element-plus')) return 'element-plus'
-          if (id.includes('node_modules/vue') || id.includes('node_modules/@vue')) return 'vue-core'
-        },
+      '/ws': {
+        target: 'ws://localhost:8080',
+        ws: true,
+        changeOrigin: true,
       },
     },
   },

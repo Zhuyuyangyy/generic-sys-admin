@@ -1,35 +1,30 @@
 /**
- * Dashboard 统计 API
+ * 仪表盘模块 API
+ * @description 系统概览、设备状态分布、库存汇总、最近活动等接口封装
  */
 import request from '@/utils/request'
+import type { DashboardOverview, EquipmentStatusDistribution, InventorySummary, RecentActivity } from '@/utils/types'
 
 /**
- * Dashboard 统计数据响应
+ * 获取系统概览数据
  */
-export interface DashboardStatsVO {
-  equipment: {
-    total: number
-    normal: number
-    maintenance: number
-    scrapped: number
-  }
-  consumable: {
-    total: number
-    lowStock: number
-    expiring: number
-  }
-  user: {
-    total: number
-    active: number
-    disabled: number
-  }
-  logTrend: Array<{ date: string; count: number }>
-  equipmentStatus: Array<{ label: string; value: number }>
-  operationType: Array<{ label: string; value: number }>
-}
+export const getOverview = (): Promise<DashboardOverview> =>
+  request.get<DashboardOverview>('/dashboard/overview') as unknown as Promise<DashboardOverview>
 
 /**
- * 获取首页统计数据（聚合后端计算，前端不再拉全量明细）
+ * 获取设备状态分布
  */
-export const getDashboardStats = (): Promise<DashboardStatsVO> =>
-  request.get<DashboardStatsVO>('/dashboard/stats') as unknown as Promise<DashboardStatsVO>
+export const getEquipmentStatus = (): Promise<EquipmentStatusDistribution> =>
+  request.get<EquipmentStatusDistribution>('/dashboard/equipment-status') as unknown as Promise<EquipmentStatusDistribution>
+
+/**
+ * 获取库存汇总数据
+ */
+export const getInventorySummary = (): Promise<InventorySummary> =>
+  request.get<InventorySummary>('/dashboard/inventory-summary') as unknown as Promise<InventorySummary>
+
+/**
+ * 获取最近活动列表
+ */
+export const getRecentActivities = (): Promise<RecentActivity[]> =>
+  request.get<RecentActivity[]>('/dashboard/recent-activities') as unknown as Promise<RecentActivity[]>

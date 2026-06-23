@@ -14,14 +14,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * JWT认证过滤器
  * 每次请求都检查Header中的Authorization: Bearer <token>
- * 
- * 解析JWT中的 roles 和 permissions，注入到Spring Security上下文
  */
 @Slf4j
 @Component
@@ -40,29 +38,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Long userId = jwtUtil.getUserId(token);
                 String username = jwtUtil.getUsername(token);
 
-                Map<String, Object> claims = jwtUtil.parse(token);
+                List<String> permissions = jwtUtil.parse(token)
+                        .get("permissions", List.class);
 
-                // 收集所有权限：roles + permissions
-                Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-
-                // 1. 从 roles claim 添加（Spring Security标准格式）
-                @SuppressWarnings("unchecked")
-                Collection<String> roles = (Collection<String>) claims.get("roles");
-                if (roles != null) {
-                    roles.stream()
-                            .map(r -> new SimpleGrantedAuthority(r.startsWith("ROLE_") ? r : "ROLE_" + r))
-                            .forEach(authorities::add);
-                }
-
-                // 2. 从 permissions claim 添加
-                @SuppressWarnings("unchecked")
-                Collection<String> permissions = (Collection<String>) claims.get("permissions");
-                if (permissions != null) {
-                    permissions.stream()
-                            .filter(p -> p != null && !p.isBlank())
-                            .map(SimpleGrantedAuthority::new)
-                            .forEach(authorities::add);
-                }
+                List<SimpleGrantedAuthority> authorities = permissions == null
+                        ? List.of()
+                        : permissions.stream()
+                              .map(p -> new SimpleGrantedAuthority(p.toString()))
+                              .collect(Collectors.toList());
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
@@ -72,8 +55,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         );
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("JWT认证成功 | userId:{} | username:{} | authorities:{}", 
-                        userId, username, authorities);
+                log.debug("JWT认证成功 | userId:{} | username:{}", userId, username);
             }
         } catch (Exception e) {
             log.warn("JWT认证异常: {}", e.getMessage());

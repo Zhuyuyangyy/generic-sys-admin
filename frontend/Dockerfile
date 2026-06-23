@@ -1,40 +1,68 @@
-# ========== Frontend Dockerfile - Multi-stage build ==========
-# 阶段一：构建
+# =============================================
+# Vue.js Frontend Dockerfile
+# Multi-stage build for optimized production image
+# =============================================
+
+# Stage 1: Build stage
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# 只复制 package.json 和 lock 文件，利用 Docker 缓存
-COPY package*.json ./
+# Copy package files first for dependency caching
+COPY package.json package-lock.json ./
+RUN npm ci --registry=https://registry.npmmirror.com
 
-# 安装依赖
-RUN npm ci --prefer-offline --no-audit --legacy-peer-deps
-
-# 复制源码
+# Copy source code and build
 COPY . .
-
-# 构建（生产环境变量）
 RUN npm run build
 
-# ========== 阶段二：运行（Nginx） ==========
-FROM nginx:alpine
+# Stage 2: Runtime stage with Nginx
+FROM nginx:1.25-alpine
 
-# 安装常用工具（用于调试）
-RUN apk add --no-cache curl
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
 
-# 复制 nginx 配置
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx config
+COPY <<'EOF' /etc/nginx/conf.d/default.conf
+server {
+    listen 80;
+    server_name _;
 
-# 复制构建产物
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript image/svg+xml;
+    gzip_min_length 256;
+
+    # SPA routing
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API reverse proxy
+    location /api/ {
+        proxy_pass http://backend:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+
+# Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Nginx 运行用户（默认 nginx）
-# 注意：nginx alpine 镜像使用 nginx 用户而非 root
-
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost/ || exit 1
-
-EXPOSE 80 443
+EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
