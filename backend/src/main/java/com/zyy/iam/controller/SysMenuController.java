@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class SysMenuController {
 
     @GetMapping
     @Operation(summary = "List menus", description = "Retrieve all menus in tree structure")
+    @PreAuthorize("hasAuthority('system:menu:list')")
     public Result<List<SysMenuVO>> getMenuTree() {
         List<SysMenuVO> tree = menuService.getMenuTree();
         return Result.ok(tree);
@@ -45,6 +47,7 @@ public class SysMenuController {
 
     @PostMapping
     @Operation(summary = "Create menu", description = "Create a new system menu")
+    @PreAuthorize("hasAuthority('system:menu:create')")
     public Result<SysMenuVO> create(
             @Valid @RequestBody SysMenuSaveDTO saveDTO,
             HttpServletRequest request) {
@@ -55,6 +58,7 @@ public class SysMenuController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update menu", description = "Update an existing menu")
+    @PreAuthorize("hasAuthority('system:menu:update')")
     public Result<SysMenuVO> update(
             @Parameter(description = "Menu ID") @PathVariable Long id,
             @Valid @RequestBody SysMenuUpdateDTO updateDTO,
@@ -67,6 +71,7 @@ public class SysMenuController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete menu", description = "Soft delete a menu (fails if menu has children)")
+    @PreAuthorize("hasAuthority('system:menu:delete')")
     public Result<Void> delete(
             @Parameter(description = "Menu ID") @PathVariable Long id,
             HttpServletRequest request) {

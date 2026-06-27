@@ -15,9 +15,16 @@ spring:
   flyway:
     enabled: false
 
+  # Auto-configure embedded Redis mock via testcontainers or embedded library
+  # For simple unit tests, Redis auto-config is excluded via @DataJpaTest etc.
   redis:
     host: localhost
     port: 6379
+
+  # Disable security for integration tests where needed
+  security:
+    filter:
+      order: 0
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -42,12 +49,25 @@ minimax:
   api-key: ""
   group-id: ""
 
-app:
-  security:
-    bcrypt-cost-factor: 4
-    max-failed-attempts: 5
-    lockout-minutes: 30
-    jwt-expiration: 7200
+# Application configuration mapping for AppProperties
+sys:
+  config:
+    security:
+      jwt-secret: test-secret-key-for-integration-testing-minimum-32-chars
+      jwt-expiration: 7200
+      jwt-refresh-expiration: 604800
+      bcrypt-cost-factor: 4
+      max-failed-attempts: 5
+      lockout-minutes: 30
+    storage:
+      endpoint: http://localhost:9000
+      access-key: test-access-key
+      secret-key: test-secret-key
+      bucket-name: test-bucket
+    app:
+      demo-mode: true
+      audit-enabled: true
+      doc-enabled: false
 
 logging:
   level:

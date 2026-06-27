@@ -121,17 +121,22 @@ public class RbacServiceImpl implements RbacService {
     }
 
     private SysMenuVO entityToVO(SysMenuEntity entity) {
+        String menuTypeText = switch (entity.getMenuType()) {
+            case 1 -> "DIRECTORY";
+            case 2 -> "MENU";
+            case 3 -> "BUTTON";
+            default -> "UNKNOWN";
+        };
+
         return SysMenuVO.builder()
                 .id(entity.getId())
                 .parentId(entity.getParentId())
-                .name(entity.getName())
+                .menuName(entity.getName())
+                .menuType(menuTypeText)
                 .path(entity.getPath())
-                .component(entity.getComponent())
                 .icon(entity.getIcon())
-                .sortOrder(entity.getSortOrder())
-                .visible(entity.getVisible())
                 .permission(entity.getPermission())
-                .menuType(entity.getMenuType())
+                .sortOrder(entity.getSortOrder())
                 .status(entity.getStatus())
                 .createTime(entity.getCreateTime())
                 .build();

@@ -55,7 +55,7 @@ public class OperationLogController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete log", description = "Delete an operation log (admin only)")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('audit:log:delete')")
     public Result<Void> delete(
             @Parameter(description = "Log ID") @PathVariable Long id) {
         operationLogService.delete(id);

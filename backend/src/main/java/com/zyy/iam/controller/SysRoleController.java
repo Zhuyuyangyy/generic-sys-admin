@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,6 +34,7 @@ public class SysRoleController {
 
     @GetMapping
     @Operation(summary = "List roles", description = "Retrieve paginated list of roles with optional filters")
+    @PreAuthorize("hasAuthority('system:role:list')")
     public Result<PageVO<SysRoleVO>> getPage(
             @Valid PageParam pageParam,
             @Parameter(description = "Role name filter (partial match)") @RequestParam(required = false) String roleName,
@@ -52,6 +54,7 @@ public class SysRoleController {
 
     @PostMapping
     @Operation(summary = "Create role", description = "Create a new system role")
+    @PreAuthorize("hasAuthority('system:role:create')")
     public Result<SysRoleVO> create(
             @Valid @RequestBody SysRoleSaveDTO saveDTO,
             HttpServletRequest request) {
@@ -62,6 +65,7 @@ public class SysRoleController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update role", description = "Update an existing role")
+    @PreAuthorize("hasAuthority('system:role:update')")
     public Result<SysRoleVO> update(
             @Parameter(description = "Role ID") @PathVariable Long id,
             @Valid @RequestBody SysRoleUpdateDTO updateDTO,
@@ -74,6 +78,7 @@ public class SysRoleController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete role", description = "Soft delete a role")
+    @PreAuthorize("hasAuthority('system:role:delete')")
     public Result<Void> delete(
             @Parameter(description = "Role ID") @PathVariable Long id,
             HttpServletRequest request) {
@@ -84,6 +89,7 @@ public class SysRoleController {
 
     @PostMapping("/{id}/menus")
     @Operation(summary = "Assign menus to role", description = "Assign menu permissions to a role")
+    @PreAuthorize("hasAuthority('system:role:update')")
     public Result<Void> assignMenus(
             @Parameter(description = "Role ID") @PathVariable Long id,
             @RequestBody List<Long> menuIds,
@@ -95,6 +101,7 @@ public class SysRoleController {
 
     @GetMapping("/{id}/menus")
     @Operation(summary = "Get role menus", description = "Retrieve menus assigned to a role")
+    @PreAuthorize("hasAuthority('system:role:list')")
     public Result<List<SysMenuVO>> getRoleMenus(
             @Parameter(description = "Role ID") @PathVariable Long id) {
         List<SysMenuVO> menus = roleService.getRoleMenus(id);
