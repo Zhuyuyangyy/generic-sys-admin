@@ -71,8 +71,8 @@ knife4j:
 # 【快速启动】项目根目录执行：docker-compose -f doc/startup/minio-docker-compose.yml up -d
 minio:
   endpoint: http://localhost:9000                # MinIO 服务地址
-  access-key: minioadmin                        # 管理后台账号（默认）
-  secret-key: minioadmin                        # 管理后台密码（默认）
+  access-key: ${MINIO_ROOT_USER:minioadmin}                        # 管理后台账号（默认）
+  secret-key: ${MINIO_ROOT_PASSWORD:minioadmin}                        # 管理后台密码（默认）
   bucket-name: generic-sys-admin                # 存储桶名称（项目专用）
   # 公开访问URL（不填则使用 endpoint+bucketName 拼接）
   public-url: http://localhost:9000/generic-sys-admin
@@ -167,7 +167,7 @@ mybatis-plus:
 jwt:
   # ⚠️ 开发环境临时 secret，【生产必须换掉】！
   # 推荐用环境变量：secret: ${JWT_SECRET}
-  secret: dev-secret-do-not-use-in-production-32chars!
+  secret: ${JWT_SECRET:dev-secret-do-not-use-in-production-32chars!}
   expiration: 7200          # Token 有效期（秒），2小时
   refresh-expiration: 604800  # RefreshToken 有效期（秒），7天
 
