@@ -1,26 +1,29 @@
 # ERMS - Enterprise Resource Management System
 
-AI-native enterprise resource operations platform for asset lifecycle management, consumable inventory, RBAC access control, audit compliance, and natural language operations.
+Enterprise resource operations platform for asset lifecycle management, consumable inventory, RBAC access control, audit compliance, and natural language operations.
 
-## Features
+## Core Capabilities
 
-- **Asset Lifecycle Management** - Equipment registration, assignment, maintenance planning, inspection, repair, and retirement
-- **Consumable Inventory** - Stock tracking, inbound/outbound records, low-stock alerts, batch and expiry management
-- **RBAC Access Control** - Role-based permissions with menu-level and button-level granularity, JWT stateless authentication
-- **Audit Trail** - AOP-based operation logging, full traceability for all write operations
-- **Natural Language Operations** - NL-driven business commands with intent parsing, risk assessment, and human confirmation
-- **Real-time Dashboard** - WebSocket push notifications, asset health metrics, inventory risk indicators
-- **File Management** - Local and MinIO object storage with upload/download
+| Module | Description |
+|--------|-------------|
+| Asset Management | Equipment registration, status tracking, maintenance scheduling |
+| Consumable Inventory | Stock tracking, inbound/outbound records, low-stock alerts |
+| RBAC Access Control | Role-based permissions, menu-level and button-level granularity, JWT authentication |
+| Audit Trail | AOP-based operation logging, full traceability for all write operations |
+| Natural Language Operations | NL-driven business commands with intent parsing and causal impact analysis |
+| Real-time Dashboard | WebSocket push notifications, asset health metrics, inventory risk indicators |
+| File Management | Local and MinIO object storage with upload/download |
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Spring Boot 3.4, MyBatis-Plus, Spring Security, JWT, Redis |
+| Backend | Spring Boot 3.2, MyBatis-Plus, Spring Security, JWT, Redis, AOP |
 | Frontend | Vue 3, TypeScript, Element Plus, Pinia, ECharts |
 | Database | MySQL 8.0, Redis 7 |
 | Storage | MinIO (optional), Local filesystem |
 | Deployment | Docker Compose, Nginx |
+| API Docs | Knife4j / OpenAPI 3.0 |
 
 ## Quick Start
 
@@ -59,9 +62,8 @@ docker compose --profile storage up -d --build
 | Role | Username | Password |
 |------|----------|----------|
 | Administrator | admin | 123456 |
-| User | user | 123456 |
 
-> **IMPORTANT**: Change default passwords before production deployment.
+> **IMPORTANT**: Change default passwords before production deployment. Set `JWT_SECRET` to a strong random value.
 
 ## API Documentation
 
@@ -80,8 +82,8 @@ generic-sys-admin/
 │       ├── common/             # Unified response, exception handling
 │       ├── config/             # Application configuration
 │       ├── controller/         # REST API controllers
-│       ├── security/           # JWT authentication
-│       ├── aspect/             # AOP operation log
+│       ├── security/           # JWT authentication filter
+│       ├── aspect/             # AOP operation logging
 │       ├── rbac/               # RBAC models
 │       ├── nl/                 # Natural language service
 │       ├── voice/              # TTS service (optional)
@@ -90,15 +92,16 @@ generic-sys-admin/
 │       └── model/              # DTOs, entities, VOs
 ├── frontend/                   # Vue 3 frontend
 │   └── src/
-│       ├── api/                # API client
-│       ├── views/              # Pages
+│       ├── api/                # API client modules
+│       ├── views/              # Page views
 │       ├── components/         # UI components
 │       ├── layout/             # App layout
 │       ├── router/             # Vue Router
 │       ├── store/              # Pinia store
 │       └── utils/              # Utilities
-├── sql/                        # Database migration scripts
+├── sql/                        # Database init scripts
 ├── archive/                    # Archived non-product materials
+├── docs/                       # Documentation
 ├── docker-compose.yml          # Service orchestration
 ├── .env.example                # Environment template
 └── README.md
@@ -148,6 +151,16 @@ npm run dev
 # API requests are proxied to http://localhost:8080
 ```
 
+### Test
+
+```bash
+# Backend unit tests
+cd backend && mvn test
+
+# Frontend build check
+cd frontend && npm run build
+```
+
 ## Production Deployment
 
 1. Generate a secure JWT secret:
@@ -181,7 +194,7 @@ All sensitive configuration is managed through environment variables. See `.env.
 | `DB_PORT` | MySQL port | `3306` |
 | `DB_NAME` | Database name | `generic_sys_admin` |
 | `DB_USERNAME` | Database user | `admin` |
-| `DB_PASSWORD` | Database password | `admin123` |
+| `DB_PASSWORD` | Database password | (must set) |
 | `REDIS_HOST` | Redis host | `redis` |
 | `REDIS_PORT` | Redis port | `6379` |
 | `JWT_SECRET` | JWT signing key | (must override) |
@@ -190,27 +203,66 @@ All sensitive configuration is managed through environment variables. See `.env.
 
 ## Roadmap
 
-- [x] Core CRUD for equipment and consumables
-- [x] JWT + RBAC authentication and authorization
-- [x] AOP operation audit logging
-- [x] Docker Compose deployment
-- [x] Natural language business flow (NL-1)
-- [x] Domain-driven module architecture (iam, asset, inventory, audit, nl, ai, file, workflow, report, dashboard, websocket)
-- [x] Equipment lifecycle management (maintenance plans, locations, health scoring)
-- [x] Consumable inventory closed loop (suppliers, stock alerts, inbound/outbound)
-- [x] Lightweight approval workflow
-- [x] NL Dry Run and risk guard (NL-3/4)
-- [x] Real-time WebSocket event center
-- [x] Audit anomaly detection
-- [x] Report generation center
-- [x] Database migration with Flyway
-- [x] CI/CD pipeline
-- [x] Enterprise frontend console (21 views)
-- [ ] Multi-tenant support
-- [ ] SSO / LDAP / OAuth2
-- [ ] Prometheus + Grafana observability
-- [ ] Backup and recovery
-- [ ] Mobile-responsive optimization
+### v0.1 - Clean Baseline (current)
+- [x] Repository cleanup and product baseline
+- [x] Security configuration (env vars, no hardcoded secrets)
+- [x] Docker Compose one-click deployment
+- [x] Product-level README and documentation
+
+### v0.2 - Enterprise Backend
+- [ ] Domain-driven module refactoring
+- [ ] RBAC completion (role/menu CRUD, permission annotations)
+- [ ] Audit log query API
+- [ ] Flyway database migrations
+
+### v0.3 - Business Closed Loop
+- [ ] Equipment lifecycle (maintenance, inspection, location, health)
+- [ ] Consumable inventory closed loop (suppliers, batches, stock alerts)
+- [ ] Lightweight approval workflow
+
+### v0.4 - NL Copilot
+- [ ] NL Dry Run with risk assessment
+- [ ] Confirmation execution protocol
+- [ ] NL command test suite
+
+### v0.5 - Product Frontend
+- [ ] Enterprise operations console
+- [ ] Asset center, inventory center, workflow center
+- [ ] Real-time dashboard with WebSocket
+
+### v0.6 - Observability & Deployment
+- [ ] Prometheus + Grafana monitoring
+- [ ] Production deployment scripts
+- [ ] Security hardening
+
+### v0.7 - Intelligence
+- [ ] Predictive restock
+- [ ] Equipment health scoring
+- [ ] Audit anomaly detection
+
+### v0.8+ - Multi-tenant
+- [ ] Tenant isolation
+- [ ] Data scope permissions (ABAC)
+- [ ] SaaS management console
+
+## Documentation
+
+Full documentation is available in the `docs/` directory:
+
+- [Architecture](docs/architecture.md)
+- [Product Specification](docs/product-spec.md)
+- [API Contract](docs/api-contract.md)
+- [Database Schema](docs/database.md)
+- [Deployment Guide](docs/deployment.md)
+- [Security Policy](docs/security.md)
+- [Roadmap](docs/roadmap.md)
+
+## Limitations
+
+- Default passwords must be changed before production use
+- WebSocket event center is in-memory (no persistence across restarts)
+- NL operations require confirmation for write commands
+- AI features (TTS, image generation) are optional and not part of the core platform
 
 ## License
 
