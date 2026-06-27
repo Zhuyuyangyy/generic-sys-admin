@@ -10,6 +10,8 @@ import com.zyy.iam.model.dto.SysUserUpdateDTO;
 import com.zyy.iam.model.vo.SysUserLoginVO;
 import com.zyy.iam.model.vo.SysUserVO;
 import com.zyy.iam.service.SysUserService;
+import com.zyy.security.JwtUtil;
+import com.zyy.security.TokenBlacklistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,6 +48,8 @@ import org.springframework.web.bind.annotation.*;
 public class SysUserController {
 
     private final SysUserService userService;
+    private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     // ==================== Authentication Endpoints ====================
 
@@ -67,6 +71,75 @@ public class SysUserController {
 
         SysUserLoginVO result = userService.login(loginDTO, clientIp);
         return Result.ok(result, "Login successful");
+    }
+
+    /**
+     * Refresh JWT access token using a valid refresh token.
+     * Old refresh token is invalidated (blacklisted) and new tokens are returned.
+     *
+     * @param refreshTokenDTO Refresh token request body
+     * @return New access + refresh tokens
+     */
+    @PostMapping("/refresh-token")
+    @Operation(summary = "Refresh access token", description = "Exchange a valid refresh token for new access and refresh tokens. The old refresh token is invalidated.")
+    public Result<SysUserLoginVO> refreshToken(@RequestBody java.util.Map<String, String> refreshTokenDTO) {
+        String refreshToken = refreshTokenDTO.get("refreshToken");
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return Result.fail(400, "Refresh token is required");
+        }
+
+        // Validate the refresh token
+        if (!jwtUtil.validate(refreshToken) || !jwtUtil.isRefreshToken(refreshToken)) {
+            return Result.fail(401, "Invalid or expired refresh token");
+        }
+
+        // Check if refresh token is blacklisted
+        if (tokenBlacklistService.isBlacklisted(refreshToken)) {
+            return Result.fail(401, "Refresh token has been revoked");
+        }
+
+        // Blacklist the old refresh token
+        long remaining = jwtUtil.getRemainingExpiration(refreshToken);
+        tokenBlacklistService.blacklist(refreshToken, remaining);
+
+        // Issue new tokens
+        Long userId = jwtUtil.getUserId(refreshToken);
+        String username = jwtUtil.getUsername(refreshToken);
+        java.util.Map<String, Object> claims = new java.util.HashMap<>();
+        String newAccessToken = jwtUtil.sign(userId, username, claims);
+        String newRefreshToken = jwtUtil.signRefresh(userId, username, claims);
+
+        SysUserVO userVO = userService.getById(userId);
+
+        SysUserLoginVO result = SysUserLoginVO.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .expiresIn(7200L)
+                .tokenType("Bearer")
+                .user(userVO)
+                .loginTime(java.time.LocalDateTime.now())
+                .build();
+
+        return Result.ok(result, "Token refreshed successfully");
+    }
+
+    /**
+     * Logout user by blacklisting the current access token.
+     *
+     * @param request HTTP request containing the Authorization header
+     * @return Operation result
+     */
+    @PostMapping("/logout")
+    @Operation(summary = "User logout", description = "Blacklist the current access token to prevent further use")
+    public Result<Void> logout(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            String token = bearerToken.substring(7);
+            long remaining = jwtUtil.getRemainingExpiration(token);
+            tokenBlacklistService.blacklist(token, remaining);
+            log.info("User logged out, token blacklisted for {} seconds", remaining);
+        }
+        return Result.ok(null, "Logged out successfully");
     }
 
     /**

@@ -24,8 +24,9 @@ import java.util.stream.Collectors;
  *   <li>HIGH_FREQUENCY_DELETE - More than 5 delete operations by same user in 1 hour</li>
  *   <li>BULK_OUTBOUND - Outbound of more than 50 units in single transaction</li>
  *   <li>UNAUTHORIZED_ATTEMPT - Repeated 403 responses from same IP</li>
- *   <li>ABNORMAL_LOGIN - Login from new IP or unusual time (outside 6am-10pm)</li>
+ *   <li>ABNORMAL_LOGIN_TIME - Login outside 6am-10pm from new IP</li>
  *   <li>PRIVILEGE_ESCALATION - User modifying their own role/permissions</li>
+ *   <li>CONCURRENT_SESSION - Same user from multiple IPs simultaneously</li>
  * </ul>
  */
 @Slf4j
@@ -57,6 +58,7 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         detectUnauthorizedAttempt();
         detectAbnormalLogin();
         detectPrivilegeEscalation();
+        detectConcurrentSession();
 
         log.info("Anomaly scan completed - {} anomalies detected", detectedAnomalies.size());
         return new ArrayList<>(detectedAnomalies);
@@ -95,6 +97,59 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         return detectedAnomalies.stream()
                 .filter(e -> e.getDetectedAt() != null && e.getDetectedAt().isAfter(cutoff))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AnomalyEvent> detectConcurrentSessions() {
+        List<AnomalyEvent> results = new ArrayList<>();
+
+        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+
+        LambdaQueryWrapper<OperationLogEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OperationLogEntity::getOperation, "LOGIN")
+                .ge(OperationLogEntity::getCreateTime, oneHourAgo);
+
+        List<OperationLogEntity> loginLogs = operationLogMapper.selectList(wrapper);
+
+        // Group by user, collect distinct IPs
+        Map<Long, Set<String>> userIps = new HashMap<>();
+        Map<Long, List<OperationLogEntity>> userLoginLogs = new HashMap<>();
+
+        for (OperationLogEntity logEntry : loginLogs) {
+            if (logEntry.getOperatorId() != null && logEntry.getIp() != null) {
+                userIps.computeIfAbsent(logEntry.getOperatorId(), k -> new HashSet<>())
+                        .add(logEntry.getIp());
+                userLoginLogs.computeIfAbsent(logEntry.getOperatorId(), k -> new ArrayList<>())
+                        .add(logEntry);
+            }
+        }
+
+        // Find users with concurrent sessions from multiple IPs
+        for (Map.Entry<Long, Set<String>> entry : userIps.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                List<OperationLogEntity> logs = userLoginLogs.get(entry.getKey());
+                List<Long> logIds = logs.stream()
+                        .map(OperationLogEntity::getId)
+                        .collect(Collectors.toList());
+                String username = logs.get(0).getOperatorName();
+
+                results.add(AnomalyEvent.builder()
+                        .id(UUID.randomUUID().toString())
+                        .anomalyType("CONCURRENT_SESSION")
+                        .severity("HIGH")
+                        .description(String.format("User %s logged in from %d different IPs within 1 hour: %s",
+                                username, entry.getValue().size(), String.join(", ", entry.getValue())))
+                        .userId(entry.getKey())
+                        .username(username)
+                        .detectedAt(LocalDateTime.now())
+                        .relatedLogIds(logIds)
+                        .recommendation("Verify legitimate concurrent access. If unexpected, terminate suspicious sessions and reset password.")
+                        .build());
+            }
+        }
+
+        return results;
     }
 
     /**
@@ -246,7 +301,7 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
             if (isAnomaly) {
                 detectedAnomalies.add(AnomalyEvent.builder()
                         .id(UUID.randomUUID().toString())
-                        .anomalyType("ABNORMAL_LOGIN")
+                        .anomalyType("ABNORMAL_LOGIN_TIME")
                         .severity("MEDIUM")
                         .description(String.format("User %s: %s",
                                 logEntry.getOperatorName(), String.join("; ", reasons)))
@@ -288,6 +343,55 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
                         .detectedAt(LocalDateTime.now())
                         .relatedLogIds(List.of(logEntry.getId()))
                         .recommendation("Investigate immediately. Self-modification of permissions is a security violation.")
+                        .build());
+            }
+        }
+    }
+
+    /**
+     * Detect CONCURRENT_SESSION: same user from multiple IPs within 1 hour.
+     */
+    private void detectConcurrentSession() {
+        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+
+        LambdaQueryWrapper<OperationLogEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OperationLogEntity::getOperation, "LOGIN")
+                .ge(OperationLogEntity::getCreateTime, oneHourAgo);
+
+        List<OperationLogEntity> loginLogs = operationLogMapper.selectList(wrapper);
+
+        // Group by user, collect distinct IPs
+        Map<Long, Set<String>> userIps = new HashMap<>();
+        Map<Long, List<OperationLogEntity>> userLoginLogs = new HashMap<>();
+
+        for (OperationLogEntity logEntry : loginLogs) {
+            if (logEntry.getOperatorId() != null && logEntry.getIp() != null) {
+                userIps.computeIfAbsent(logEntry.getOperatorId(), k -> new HashSet<>())
+                        .add(logEntry.getIp());
+                userLoginLogs.computeIfAbsent(logEntry.getOperatorId(), k -> new ArrayList<>())
+                        .add(logEntry);
+            }
+        }
+
+        for (Map.Entry<Long, Set<String>> entry : userIps.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                List<OperationLogEntity> logs = userLoginLogs.get(entry.getKey());
+                List<Long> logIds = logs.stream()
+                        .map(OperationLogEntity::getId)
+                        .collect(Collectors.toList());
+                String username = logs.get(0).getOperatorName();
+
+                detectedAnomalies.add(AnomalyEvent.builder()
+                        .id(UUID.randomUUID().toString())
+                        .anomalyType("CONCURRENT_SESSION")
+                        .severity("HIGH")
+                        .description(String.format("User %s logged in from %d different IPs within 1 hour: %s",
+                                username, entry.getValue().size(), String.join(", ", entry.getValue())))
+                        .userId(entry.getKey())
+                        .username(username)
+                        .detectedAt(LocalDateTime.now())
+                        .relatedLogIds(logIds)
+                        .recommendation("Verify legitimate concurrent access. If unexpected, terminate suspicious sessions and reset password.")
                         .build());
             }
         }

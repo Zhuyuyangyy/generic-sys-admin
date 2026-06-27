@@ -100,6 +100,49 @@ public class JwtUtil implements InitializingBean {
 
     /** 刷新Token */
     public String refresh(Long userId, String username, Map<String, Object> extraClaims) {
-        return sign(userId, username, extraClaims);
+        return signRefresh(userId, username, extraClaims);
+    }
+
+    /** 签发Refresh Token (longer expiration) */
+    public String signRefresh(Long userId, String username, Map<String, Object> extraClaims) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + TimeUnit.SECONDS.toMillis(refreshExpiration));
+
+        JwtBuilder builder = Jwts.builder()
+                .subject(userId.toString())
+                .claim("username", username)
+                .claim("userId", userId)
+                .claim("tokenType", "refresh")
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(secretKey, Jwts.SIG.HS256);
+
+        if (extraClaims != null) {
+            extraClaims.forEach(builder::claim);
+        }
+
+        return builder.compact();
+    }
+
+    /** Check if the token is a refresh token */
+    public boolean isRefreshToken(String token) {
+        try {
+            Claims claims = parse(token);
+            return "refresh".equals(claims.get("tokenType", String.class));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Get remaining expiration time in seconds */
+    public long getRemainingExpiration(String token) {
+        try {
+            Claims claims = parse(token);
+            Date expiration = claims.getExpiration();
+            long remainingMs = expiration.getTime() - System.currentTimeMillis();
+            return remainingMs > 0 ? TimeUnit.MILLISECONDS.toSeconds(remainingMs) : 0;
+        } catch (ExpiredJwtException e) {
+            return 0;
+        }
     }
 }

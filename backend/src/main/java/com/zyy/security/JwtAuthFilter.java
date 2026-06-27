@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 /**
  * JWT认证过滤器
  * 每次请求都检查Header中的Authorization: Bearer <token>
+ * Also checks token blacklist before accepting.
  */
 @Slf4j
 @Component
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -35,6 +37,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             String token = extractToken(request);
             if (StringUtils.hasText(token) && jwtUtil.validate(token)) {
+                // Check token blacklist
+                if (tokenBlacklistService.isBlacklisted(token)) {
+                    log.warn("Token is blacklisted, rejecting request");
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 Long userId = jwtUtil.getUserId(token);
                 String username = jwtUtil.getUsername(token);
 

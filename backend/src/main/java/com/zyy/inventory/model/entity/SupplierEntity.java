@@ -40,6 +40,9 @@ public class SupplierEntity extends BaseEntity {
     /** Supplier description */
     private String description;
 
+    /** Supplier lead time in days */
+    private Integer leadTimeDays;
+
     /** Supplier status: 0=inactive, 1=active */
     private Integer status;
 }

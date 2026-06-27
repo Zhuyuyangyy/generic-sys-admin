@@ -31,4 +31,11 @@ public interface AnomalyDetectionService {
      * @return list of anomaly events within the time window
      */
     List<AnomalyEvent> getRecentAnomalies(int hours);
+
+    /**
+     * Detect concurrent sessions: same user from multiple IPs simultaneously.
+     *
+     * @return list of detected concurrent session anomalies
+     */
+    List<AnomalyEvent> detectConcurrentSessions();
 }

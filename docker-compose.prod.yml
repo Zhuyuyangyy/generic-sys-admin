@@ -1,0 +1,150 @@
+version: '3.8'
+
+# =============================================
+# ERMS - Production Docker Compose Override
+# =============================================
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# =============================================
+
+services:
+  mysql:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    volumes:
+      - /opt/erms/mysql/data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --max_connections=500
+      - --innodb_buffer_pool_size=512M
+      - --slow_query_log=ON
+      - --long_query_time=2
+      - --slow_query_log_file=/var/lib/mysql/slow.log
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+    volumes:
+      - /opt/erms/redis/data:/data
+
+  backend:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "10"
+    volumes:
+      - /opt/erms/uploads:/app/uploads
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      RATE_LIMIT_ENABLED: "true"
+      TOKEN_BLACKLIST_ENABLED: "true"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+
+  frontend:
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 32M
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: erms-prometheus
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./infra/docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /opt/erms/prometheus/data:/prometheus
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+    networks:
+      - erms-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: erms-grafana
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 64M
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./infra/docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - /opt/erms/grafana/data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+    networks:
+      - erms-network
