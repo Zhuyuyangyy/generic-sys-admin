@@ -203,14 +203,14 @@ let refreshTimer: ReturnType<typeof setInterval>
 let ws: WebSocket | null = null
 
 const formatTime = (ts: string) => ts ? ts.replace('T', ' ').slice(0, 19) : '-'
-const activityType = (type: string): '' | 'primary' | 'success' | 'warning' | 'danger' => {
-  const map: Record<string, '' | 'primary' | 'success' | 'warning' | 'danger'> = {
+const activityType = (type: string): 'primary' | 'success' | 'warning' | 'danger' => {
+  const map: Record<string, 'primary' | 'success' | 'warning' | 'danger'> = {
     EQUIPMENT: 'primary', CONSUMABLE: 'warning', MAINTENANCE: 'danger', WORKFLOW: 'success',
   }
   return map[type] || 'primary'
 }
-const eventTypeTag = (type: string): '' | 'success' | 'warning' | 'danger' | 'info' => {
-  const map: Record<string, '' | 'success' | 'warning' | 'danger' | 'info'> = {
+const eventTypeTag = (type: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
     ALERT: 'danger', INFO: 'info', UPDATE: 'success',
   }
   return map[type] || 'info'

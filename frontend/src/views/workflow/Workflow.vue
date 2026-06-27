@@ -132,8 +132,8 @@ import {
 import type { WorkflowDefinitionVO, WorkflowInstanceVO, WorkflowTaskVO } from '@/utils/types'
 import request from '@/utils/request'
 
-const instanceStatusType = (s: string): '' | 'success' | 'warning' | 'danger' | 'info' => {
-  const map: Record<string, '' | 'success' | 'warning' | 'danger' | 'info'> = {
+const instanceStatusType = (s: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
     ACTIVE: 'warning', COMPLETED: 'success', REJECTED: 'danger', CANCELLED: 'info',
   }
   return map[s] || 'info'

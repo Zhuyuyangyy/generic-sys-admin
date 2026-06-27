@@ -92,7 +92,7 @@ import { getMenuTree, createMenu, updateMenu, deleteMenu, type MenuSaveDTO } fro
 import type { MenuVO } from '@/utils/types'
 
 const menuTypeLabel = (type?: number) => { const m: Record<number, string> = { 0: '目录', 1: '菜单', 2: '按钮' }; return m[type ?? 1] || '未知' }
-const menuTypeTag = (type?: number): '' | 'success' | 'warning' | 'danger' | 'info' => { const m: Record<number, '' | 'success' | 'warning' | 'danger' | 'info'> = { 0: '', 1: 'success', 2: 'warning' }; return m[type ?? 1] || 'info' }
+const menuTypeTag = (type?: number): 'success' | 'warning' | 'danger' | 'info' | 'primary' => { const m: Record<number, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = { 0: 'primary', 1: 'success', 2: 'warning' }; return m[type ?? 1] || 'info' }
 
 const loading = ref(false)
 const menuTree = ref<MenuVO[]>([])

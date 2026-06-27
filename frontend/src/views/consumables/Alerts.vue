@@ -99,8 +99,8 @@ import { Warning, Timer, Box } from '@element-plus/icons-vue'
 import { getStockAlerts, getAlertSummary, acknowledgeAlert } from '@/api/stockAlert'
 import type { StockAlertVO } from '@/utils/types'
 
-const alertTypeTag = (type: string): '' | 'success' | 'warning' | 'danger' | 'info' => {
-  const map: Record<string, '' | 'success' | 'warning' | 'danger' | 'info'> = { LOW_STOCK: 'warning', EXPIRING: 'danger', OVERSTOCK: 'info' }
+const alertTypeTag = (type: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = { LOW_STOCK: 'warning', EXPIRING: 'danger', OVERSTOCK: 'info' }
   return map[type] || 'info'
 }
 

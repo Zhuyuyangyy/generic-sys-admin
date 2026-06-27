@@ -143,8 +143,8 @@ import {
 } from '@/api/maintenance'
 import type { MaintenancePlanVO } from '@/utils/types'
 
-const planStatusType = (s: string): '' | 'success' | 'warning' | 'danger' | 'info' => {
-  const map: Record<string, '' | 'success' | 'warning' | 'danger' | 'info'> = {
+const planStatusType = (s: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
     PENDING: 'info', ACTIVE: 'warning', COMPLETED: 'success', CANCELLED: 'info', OVERDUE: 'danger',
   }
   return map[s] || 'info'

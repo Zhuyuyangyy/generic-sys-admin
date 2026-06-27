@@ -414,6 +414,89 @@ export interface CausalWarning {
   relatedEntities?: string[]
 }
 
+// ==================== 巡检管理 ====================
+
+/**
+ * 巡检视图对象
+ */
+export interface InspectionVO {
+  id: number
+  equipmentId: number
+  equipmentName?: string
+  inspectorId?: number
+  inspectorName?: string
+  type: string
+  typeText?: string
+  status: string
+  statusText: string
+  scheduledDate: string
+  completedDate?: string
+  findings?: string
+  recommendations?: string
+  attachments?: string[]
+  createTime: string
+  updateTime?: string
+}
+
+/**
+ * 巡检新增/编辑请求参数
+ */
+export interface InspectionSaveDTO {
+  equipmentId: number
+  type: string
+  scheduledDate: string
+  inspectorId?: number
+  findings?: string
+  recommendations?: string
+}
+
+// ==================== 任务分配 ====================
+
+/**
+ * 任务分配视图对象
+ */
+export interface AssignmentVO {
+  id: number
+  type: string
+  referenceId: number
+  referenceTitle?: string
+  assigneeId: number
+  assigneeName?: string
+  assignerId?: number
+  assignerName?: string
+  status: string
+  statusText: string
+  dueDate?: string
+  completedDate?: string
+  remarks?: string
+  createTime: string
+  updateTime?: string
+}
+
+// ==================== 批次管理 ====================
+
+/**
+ * 批次视图对象
+ */
+export interface BatchVO {
+  id: number
+  consumableId: number
+  consumableName?: string
+  batchNo: string
+  quantity: number
+  remainingQuantity: number
+  supplier?: string
+  inboundDate: string
+  expirationDate?: string
+  daysUntilExpiry?: number
+  status: string
+  statusText: string
+  referenceNo?: string
+  remarks?: string
+  createTime: string
+  updateTime?: string
+}
+
 // ==================== 报表 ====================
 
 /**

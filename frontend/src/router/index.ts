@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '../store/user'
 
 const Layout = () => import('../layout/Layout.vue')
@@ -15,14 +15,14 @@ const routes: RouteRecordRaw[] = [
     component: Layout,
     redirect: '/dashboard',
     children: [
-      // Dashboard
+      // ── 总览驾驶舱 ──
       {
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('../views/dashboard/Dashboard.vue'),
         meta: { title: '总览驾驶舱', icon: 'Monitor' }
       },
-      // Asset Management
+      // ── 资产管理 ──
       {
         path: 'equipment',
         name: 'Equipment',
@@ -48,12 +48,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '维保计划', icon: 'SetUp', group: '资产管理' }
       },
       {
+        path: 'equipment/inspection',
+        name: 'Inspection',
+        component: () => import('../views/equipment/Inspection.vue'),
+        meta: { title: '设备巡检', icon: 'View', group: '资产管理' }
+      },
+      {
         path: 'equipment/health',
         name: 'AssetHealth',
         component: () => import('../views/equipment/Health.vue'),
         meta: { title: '资产健康', icon: 'FirstAidKit', group: '资产管理' }
       },
-      // Inventory Management
+      // ── 耗材库存 ──
       {
         path: 'consumables',
         name: 'Consumables',
@@ -73,10 +79,10 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '出库管理', icon: 'Upload2', group: '耗材库存' }
       },
       {
-        path: 'consumables/alerts',
-        name: 'StockAlerts',
-        component: () => import('../views/consumables/Alerts.vue'),
-        meta: { title: '库存预警', icon: 'Bell', group: '耗材库存' }
+        path: 'consumables/batches',
+        name: 'Batches',
+        component: () => import('../views/consumables/Batches.vue'),
+        meta: { title: '批次管理', icon: 'Tickets', group: '耗材库存' }
       },
       {
         path: 'consumables/suppliers',
@@ -84,7 +90,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/consumables/Suppliers.vue'),
         meta: { title: '供应商管理', icon: 'OfficeBuilding', group: '耗材库存' }
       },
-      // Workflow
+      {
+        path: 'consumables/alerts',
+        name: 'StockAlerts',
+        component: () => import('../views/consumables/Alerts.vue'),
+        meta: { title: '库存预警', icon: 'Bell', group: '耗材库存' }
+      },
+      // ── 工单流程 ──
       {
         path: 'workflow',
         name: 'Workflow',
@@ -97,14 +109,14 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/workflow/MyTasks.vue'),
         meta: { title: '我的待办', icon: 'List', group: '工单流程' }
       },
-      // NL Assistant
+      // ── 智能助手 ──
       {
         path: 'nl-assistant',
         name: 'NLAssistant',
         component: () => import('../views/nl/NLAssistant.vue'),
         meta: { title: '智能助手', icon: 'ChatDotRound', group: '智能助手' }
       },
-      // System Management
+      // ── 系统管理 ──
       {
         path: 'system/users',
         name: 'Users',
@@ -135,7 +147,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/system/Anomaly.vue'),
         meta: { title: '审计中心', icon: 'Warning', group: '系统管理' }
       },
-      // Reports
+      // ── 报表中心 ──
       {
         path: 'reports',
         name: 'Reports',
