@@ -1,13 +1,13 @@
 package com.zyy.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.zyy.mapper.ConsumableMapper;
-import com.zyy.mapper.InventoryTransactionMapper;
-import com.zyy.model.dto.ConsumableSaveDTO;
-import com.zyy.model.entity.ConsumableEntity;
-import com.zyy.model.vo.ConsumableVO;
-import com.zyy.model.vo.PageVO;
-import com.zyy.service.impl.ConsumableServiceImpl;
+import com.zyy.inventory.mapper.ConsumableMapper;
+import com.zyy.inventory.mapper.InventoryTransactionMapper;
+import com.zyy.inventory.model.dto.ConsumableSaveDTO;
+import com.zyy.inventory.model.entity.ConsumableEntity;
+import com.zyy.inventory.model.vo.ConsumableVO;
+import com.zyy.common.PageVO;
+import com.zyy.inventory.service.impl.ConsumableServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

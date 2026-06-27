@@ -1,10 +1,10 @@
 package com.zyy.nl;
 
-import com.zyy.service.EquipmentService;
-import com.zyy.service.ConsumableService;
-import com.zyy.service.InventoryRecordService;
-import com.zyy.service.SysUserService;
-import com.zyy.service.SysRoleService;
+import com.zyy.asset.service.EquipmentService;
+import com.zyy.inventory.service.ConsumableService;
+import com.zyy.inventory.service.InventoryRecordService;
+import com.zyy.iam.service.SysUserService;
+import com.zyy.iam.service.SysRoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

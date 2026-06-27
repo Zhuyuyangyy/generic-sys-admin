@@ -1,7 +1,7 @@
-package com.zyy.mapper;
+package com.zyy.iam.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.zyy.model.entity.SysUserRoleEntity;
+import com.zyy.iam.model.entity.SysUserRoleEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;

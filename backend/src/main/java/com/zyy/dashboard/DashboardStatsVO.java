@@ -1,4 +1,4 @@
-package com.zyy.model.vo;
+package com.zyy.dashboard;
 
 import lombok.Builder;
 import lombok.Data;

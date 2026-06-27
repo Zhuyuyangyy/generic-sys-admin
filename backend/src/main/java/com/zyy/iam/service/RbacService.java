@@ -1,4 +1,6 @@
-package com.zyy.service;
+package com.zyy.iam.service;
+
+import com.zyy.iam.model.vo.SysMenuVO;
 
 import java.util.List;
 import java.util.Set;
@@ -28,5 +30,5 @@ public interface RbacService {
      * @param userId 用户ID
      * @return 菜单树形结构
      */
-    List<com.zyy.model.vo.SysMenuVO> getMenuTreeByUserId(Long userId);
+    List<SysMenuVO> getMenuTreeByUserId(Long userId);
 }

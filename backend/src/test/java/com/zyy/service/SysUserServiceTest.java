@@ -1,12 +1,13 @@
 package com.zyy.service;
 
 import com.zyy.config.AppProperties;
-import com.zyy.mapper.SysUserMapper;
-import com.zyy.model.dto.SysUserLoginDTO;
-import com.zyy.model.entity.SysUserEntity;
-import com.zyy.model.vo.SysUserLoginVO;
+import com.zyy.iam.mapper.SysUserMapper;
+import com.zyy.iam.model.dto.SysUserLoginDTO;
+import com.zyy.iam.model.entity.SysUserEntity;
+import com.zyy.iam.model.vo.SysUserLoginVO;
+import com.zyy.iam.service.RbacService;
 import com.zyy.security.JwtUtil;
-import com.zyy.service.impl.SysUserServiceImpl;
+import com.zyy.iam.service.impl.SysUserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

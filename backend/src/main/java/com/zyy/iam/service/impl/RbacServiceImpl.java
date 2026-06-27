@@ -1,11 +1,11 @@
-package com.zyy.service.impl;
+package com.zyy.iam.service.impl;
 
-import com.zyy.mapper.SysMenuMapper;
-import com.zyy.mapper.SysRoleMapper;
-import com.zyy.mapper.SysUserRoleMapper;
-import com.zyy.model.entity.SysMenuEntity;
-import com.zyy.model.vo.SysMenuVO;
-import com.zyy.service.RbacService;
+import com.zyy.iam.mapper.SysMenuMapper;
+import com.zyy.iam.mapper.SysRoleMapper;
+import com.zyy.iam.mapper.SysUserRoleMapper;
+import com.zyy.iam.model.entity.SysMenuEntity;
+import com.zyy.iam.model.vo.SysMenuVO;
+import com.zyy.iam.service.RbacService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
