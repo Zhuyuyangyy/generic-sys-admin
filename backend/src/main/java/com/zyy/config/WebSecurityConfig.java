@@ -3,6 +3,7 @@ package com.zyy.config;
 import com.zyy.security.JwtAuthFilter;
 import com.zyy.security.RateLimitFilter;
 import com.zyy.security.FileUploadValidationFilter;
+import com.zyy.security.TenantFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -35,6 +36,7 @@ public class WebSecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final RateLimitFilter rateLimitFilter;
     private final FileUploadValidationFilter fileUploadValidationFilter;
+    private final TenantFilter tenantFilter;
 
     @Value("${security.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
     private String allowedOrigins;
@@ -67,6 +69,8 @@ public class WebSecurityConfig {
             )
             // 添加 JWT 认证过滤器
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            // 添加租户上下文过滤器（在JWT之后）
+            .addFilterAfter(tenantFilter, JwtAuthFilter.class)
             // 添加限流过滤器（在JWT之前）
             .addFilterBefore(rateLimitFilter, JwtAuthFilter.class)
             // 添加文件上传MIME验证过滤器

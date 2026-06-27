@@ -50,6 +50,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 List<String> permissions = jwtUtil.parse(token)
                         .get("permissions", List.class);
 
+                // Extract tenantId and departmentId from JWT claims
+                Long tenantId = null;
+                Object tenantIdObj = jwtUtil.parse(token).get("tenantId");
+                if (tenantIdObj != null) {
+                    tenantId = ((Number) tenantIdObj).longValue();
+                }
+                Long departmentId = null;
+                Object departmentIdObj = jwtUtil.parse(token).get("departmentId");
+                if (departmentIdObj != null) {
+                    departmentId = ((Number) departmentIdObj).longValue();
+                }
+
                 List<SimpleGrantedAuthority> authorities = permissions == null
                         ? List.of()
                         : permissions.stream()
@@ -58,7 +70,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
-                                new LoginUser(userId, username),
+                                new LoginUser(userId, username, tenantId, departmentId, authorities),
                                 null,
                                 authorities
                         );

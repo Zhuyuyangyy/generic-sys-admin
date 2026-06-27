@@ -128,6 +128,8 @@ public class SysUserServiceImpl implements SysUserService {
 
         // Generate JWT tokens using centralized JwtUtil
         Map<String, Object> claims = new HashMap<>();
+        claims.put("tenantId", user.getTenantId() != null ? user.getTenantId() : 1L);
+        claims.put("departmentId", user.getDepartmentId());
         String accessToken = jwtUtil.sign(user.getId(), user.getUsername(), claims);
         String refreshToken = jwtUtil.refresh(user.getId(), user.getUsername(), claims);
 

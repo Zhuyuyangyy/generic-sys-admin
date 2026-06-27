@@ -32,6 +32,10 @@ public abstract class BaseEntity implements Serializable {
     /** Record creator user ID */
     protected Long createUser;
 
+    /** Tenant identifier for multi-tenancy support */
+    @TableField(fill = FieldFill.INSERT)
+    protected Long tenantId;
+
     /** Logical deletion flag: 0=active, 1=deleted */
     @TableLogic
     @TableField(fill = FieldFill.INSERT)

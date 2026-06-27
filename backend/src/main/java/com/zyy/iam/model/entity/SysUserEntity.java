@@ -49,6 +49,9 @@ public class SysUserEntity extends BaseEntity {
     /** Profile avatar URL */
     private String avatarUrl;
 
+    /** Department ID for data scope filtering */
+    private Long departmentId;
+
     /**
      * Account status.
      * 0 = disabled (forbidden to login)

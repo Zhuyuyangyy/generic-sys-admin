@@ -106,6 +106,18 @@ public class SysUserController {
         Long userId = jwtUtil.getUserId(refreshToken);
         String username = jwtUtil.getUsername(refreshToken);
         java.util.Map<String, Object> claims = new java.util.HashMap<>();
+
+        // Preserve tenantId and departmentId from refresh token
+        io.jsonwebtoken.Claims oldClaims = jwtUtil.parse(refreshToken);
+        Object tenantIdObj = oldClaims.get("tenantId");
+        if (tenantIdObj != null) {
+            claims.put("tenantId", ((Number) tenantIdObj).longValue());
+        }
+        Object departmentIdObj = oldClaims.get("departmentId");
+        if (departmentIdObj != null) {
+            claims.put("departmentId", ((Number) departmentIdObj).longValue());
+        }
+
         String newAccessToken = jwtUtil.sign(userId, username, claims);
         String newRefreshToken = jwtUtil.signRefresh(userId, username, claims);
 
