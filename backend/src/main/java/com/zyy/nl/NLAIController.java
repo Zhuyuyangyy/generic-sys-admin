@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -51,14 +52,32 @@ public class NLAIController {
     }
 
     @PostMapping("/dry-run")
-    @Operation(summary = "NL Dry Run", description = "Parse NL input and return a preview of what would happen WITHOUT executing. Returns a confirmationId for subsequent execute-confirmed call.")
-    public Result<DryRunResult> dryRun(
+    @Operation(summary = "NL Dry Run", description = "Parse NL input and return a preview of what would happen WITHOUT executing. Returns a confirmationId for subsequent execute-confirmed call. Enhanced with affected entities, impact scope, permission check, and approval workflow status.")
+    public Result<Map<String, Object>> dryRun(
             @Parameter(description = "自然语言输入") @RequestBody Map<String, String> request) {
 
         String input = request.get("input");
         DryRunResult result = nlService.dryRun(input);
 
-        return Result.ok(result);
+        // Build enhanced response with all detail fields
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("confirmationId", result.getConfirmationId());
+        response.put("intent", result.getIntent());
+        response.put("entities", result.getEntities());
+        response.put("affectedTables", result.getAffectedTables());
+        response.put("expectedChanges", result.getExpectedChanges());
+        response.put("riskLevel", result.getRiskLevel());
+        response.put("requiresApproval", result.isRequiresApproval());
+        response.put("confirmRequired", result.isConfirmRequired());
+        response.put("timestamp", result.getTimestamp());
+
+        // Enhanced fields
+        response.put("estimatedImpactScope", result.getEstimatedImpactScope());
+        response.put("requiredPermission", result.getRequiredPermission());
+        response.put("approvalWorkflowNeeded", result.isApprovalWorkflowNeeded());
+        response.put("originalInput", result.getOriginalInput());
+
+        return Result.ok(response);
     }
 
     @PostMapping("/execute-confirmed")

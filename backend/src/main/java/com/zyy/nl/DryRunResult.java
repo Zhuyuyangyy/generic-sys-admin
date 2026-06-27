@@ -33,4 +33,18 @@ public class DryRunResult implements Serializable {
     private boolean confirmRequired;
 
     private LocalDateTime timestamp;
+
+    // ==================== Enhanced Fields ====================
+
+    /** Estimated number of records that would be affected */
+    private Integer estimatedImpactScope;
+
+    /** Required permission for this operation, null if none needed */
+    private String requiredPermission;
+
+    /** Whether an approval workflow is needed before execution */
+    private boolean approvalWorkflowNeeded;
+
+    /** Original natural language input */
+    private String originalInput;
 }
