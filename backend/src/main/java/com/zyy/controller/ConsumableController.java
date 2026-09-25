@@ -7,6 +7,7 @@ import com.zyy.model.dto.ConsumableUpdateDTO;
 import com.zyy.model.vo.ConsumableVO;
 import com.zyy.model.vo.PageVO;
 import com.zyy.security.SecurityUtils;
+import com.zyy.service.impl.ConsumableServiceImpl.ReplayedRequestException;
 import com.zyy.service.ConsumableService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,6 +29,9 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Consumable Management", description = "Consumable inventory lifecycle and stock management")
 public class ConsumableController {
+
+    /** 幂等键请求头。缺失时按未保护处理（向后兼容既有客户端）。 */
+    public static final String IDEMPOTENCY_HEADER = "Idempotency-Key";
 
     private final ConsumableService consumableService;
     private final SecurityUtils securityUtils;
@@ -79,8 +83,14 @@ public class ConsumableController {
             @PathVariable Long id,
             @Parameter(description = "Quantity to add") @RequestParam Integer quantity,
             @RequestParam(required = false) String referenceNo,
-            @RequestParam(required = false) String remarks) {
-        consumableService.inbound(id, quantity, referenceNo, remarks, getCurrentUserId());
+            @RequestParam(required = false) String remarks,
+            @RequestHeader(value = IDEMPOTENCY_HEADER, required = false) String idempotencyKey) {
+        try {
+            consumableService.inbound(id, quantity, referenceNo, remarks,
+                    getCurrentUserId(), idempotencyKey);
+        } catch (ReplayedRequestException replay) {
+            return Result.ok(null, "Inbound already recorded");
+        }
         return Result.ok(null, "Inbound recorded");
     }
 
@@ -91,8 +101,14 @@ public class ConsumableController {
             @PathVariable Long id,
             @Parameter(description = "Quantity to deduct") @RequestParam Integer quantity,
             @RequestParam(required = false) String referenceNo,
-            @RequestParam(required = false) String remarks) {
-        consumableService.outbound(id, quantity, referenceNo, remarks, getCurrentUserId());
+            @RequestParam(required = false) String remarks,
+            @RequestHeader(value = IDEMPOTENCY_HEADER, required = false) String idempotencyKey) {
+        try {
+            consumableService.outbound(id, quantity, referenceNo, remarks,
+                    getCurrentUserId(), idempotencyKey);
+        } catch (ReplayedRequestException replay) {
+            return Result.ok(null, "Outbound already recorded");
+        }
         return Result.ok(null, "Outbound recorded");
     }
 
@@ -103,8 +119,14 @@ public class ConsumableController {
             @PathVariable Long id,
             @Parameter(description = "Quantity change (+/-)") @RequestParam Integer delta,
             @RequestParam(required = false) String referenceNo,
-            @RequestParam(required = false) String remarks) {
-        consumableService.adjustStock(id, delta, referenceNo, remarks, getCurrentUserId());
+            @RequestParam(required = false) String remarks,
+            @RequestHeader(value = IDEMPOTENCY_HEADER, required = false) String idempotencyKey) {
+        try {
+            consumableService.adjustStock(id, delta, referenceNo, remarks,
+                    getCurrentUserId(), idempotencyKey);
+        } catch (ReplayedRequestException replay) {
+            return Result.ok(null, "Stock already adjusted");
+        }
         return Result.ok(null, "Stock adjusted");
     }
 

@@ -45,15 +45,43 @@ public interface ConsumableService {
     void adjustStock(Long id, Integer delta, String referenceNo, String remarks, Long operatorId);
 
     /**
+     * Adjust stock with an Idempotency-Key.
+     *
+     * <p>stock is an increment, so a retried request changes the balance twice
+     * and writes a second ledger row. Supplying a key makes the operation
+     * replayed-safe: the same key with the same payload runs once, and the same
+     * key with a different payload is rejected rather than executed.</p>
+     *
+     * <p>Pass {@code null} for the key to keep the unprotected behaviour; the
+     * caller then owns the retry risk.</p>
+     *
+     * @param idempotencyKey opaque client-generated value, or null
+     */
+    void adjustStock(Long id, Integer delta, String referenceNo, String remarks,
+                     Long operatorId, String idempotencyKey);
+
+    /**
      * Perform inventory check-in (inbound).
      */
     void inbound(Long id, Integer quantity, String referenceNo, String remarks, Long operatorId);
+
+    /**
+     * Perform inventory check-in (inbound) with an Idempotency-Key.
+     */
+    void inbound(Long id, Integer quantity, String referenceNo, String remarks,
+                 Long operatorId, String idempotencyKey);
 
     /**
      * Perform inventory check-out (outbound).
      * Validates sufficient stock before deduction.
      */
     void outbound(Long id, Integer quantity, String referenceNo, String remarks, Long operatorId);
+
+    /**
+     * Perform inventory check-out (outbound) with an Idempotency-Key.
+     */
+    void outbound(Long id, Integer quantity, String referenceNo, String remarks,
+                  Long operatorId, String idempotencyKey);
 
     /**
      * Soft delete a consumable record.

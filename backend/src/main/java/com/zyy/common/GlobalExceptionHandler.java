@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -109,6 +110,22 @@ public class GlobalExceptionHandler {
                                                   HttpServletRequest request) {
         log.warn("授权被拒 | URI:{} | 消息:{}", request.getRequestURI(), e.getMessage());
         return Result.fail(403, "没有执行该操作的权限");
+    }
+
+
+    /**
+     * 幂等键被不同请求复用 → 409 Conflict。
+     *
+     * 这是客户端错误：同一个 key 只能对应一个 payload。静默改成第二次请求的
+     * payload 会让调用方误以为只发生了一次操作。
+     */
+    @ExceptionHandler(com.zyy.service.InventoryIdempotencyService.IdempotencyKeyConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Result<Void> handleIdempotencyKeyConflict(
+            com.zyy.service.InventoryIdempotencyService.IdempotencyKeyConflictException e,
+            HttpServletRequest request) {
+        log.warn("幂等键冲突 | URI:{} | 消息:{}", request.getRequestURI(), e.getMessage());
+        return Result.fail(409, e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

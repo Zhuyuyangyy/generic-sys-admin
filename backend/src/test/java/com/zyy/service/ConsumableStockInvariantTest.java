@@ -50,6 +50,12 @@ class ConsumableStockInvariantTest {
     @Mock
     private InventoryTransactionMapper transactionMapper;
 
+    @Mock
+    private com.zyy.mapper.IdempotencyRecordMapper idempotencyRecordMapper;
+
+    @Mock
+    private InventoryIdempotencyService idempotencyService;
+
     private ConsumableServiceImpl service;
 
     /** Simulates the database row: last value written by updateById. */
@@ -57,7 +63,8 @@ class ConsumableStockInvariantTest {
 
     @BeforeEach
     void setUp() {
-        service = new ConsumableServiceImpl(consumableMapper, transactionMapper);
+        service = new ConsumableServiceImpl(
+                consumableMapper, transactionMapper, idempotencyService);
 
         lenient().when(consumableMapper.selectById(anyLong())).thenAnswer(inv -> {
             ConsumableEntity row = storedRow.get();

@@ -27,14 +27,20 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -345,5 +351,76 @@ class SecurityRuntimeAuthorizationTest {
     void userListIsNotPublic() throws Exception {
         mockMvc.perform(get("/api/users"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // ==================== 库存幂等：HTTP 语义 ====================
+
+    @Test
+    @DisplayName("无 Idempotency-Key 的入库请求正常放行（向后兼容）")
+    void inboundWithoutKeyStillWorks() throws Exception {
+        mockMvc.perform(post("/api/consumables/7/inbound")
+                        .with(authentication(tokenWith("consumable:in")))
+                        .param("quantity", "10"))
+                .andExpect(status().isOk());
+        verify(consumableService).inbound(eq(7L), eq(10), any(), any(), eq(1L), isNull());
+    }
+
+    @Test
+    @DisplayName("携带 Idempotency-Key 时它被透传到业务层")
+    void inboundKeyIsForwarded() throws Exception {
+        mockMvc.perform(post("/api/consumables/7/inbound")
+                        .with(authentication(tokenWith("consumable:in")))
+                        .header("Idempotency-Key", "client-key-1")
+                        .param("quantity", "10"))
+                .andExpect(status().isOk());
+        verify(consumableService).inbound(eq(7L), eq(10), any(), any(), eq(1L), eq("client-key-1"));
+    }
+
+    @Test
+    @DisplayName("幂等键被不同 payload 复用 → 409")
+    void inboundKeyConflictReturns409() throws Exception {
+        doThrow(new com.zyy.service.InventoryIdempotencyService
+                .IdempotencyKeyConflictException("Idempotency-Key 已被不同请求使用"))
+                .when(consumableService).inbound(any(), anyInt(), any(), any(), any(), any());
+
+        mockMvc.perform(post("/api/consumables/7/inbound")
+                        .with(authentication(tokenWith("consumable:in")))
+                        .header("Idempotency-Key", "reused-key")
+                        .param("quantity", "999"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("幂等重放返回 200 且不再调用业务层")
+    void inboundReplayReturnsOkWithoutSecondMutation() throws Exception {
+        doThrow(new com.zyy.service.impl.ConsumableServiceImpl.ReplayedRequestException("INBOUND:7:10"))
+                .when(consumableService).inbound(any(), anyInt(), any(), any(), any(), any());
+
+        mockMvc.perform(post("/api/consumables/7/inbound")
+                        .with(authentication(tokenWith("consumable:in")))
+                        .header("Idempotency-Key", "same-key")
+                        .param("quantity", "10"))
+                .andExpect(status().isOk());
+        // 只调用一次；重放由 Controller 捕获，不再执行业务
+        verify(consumableService, times(1))
+                .inbound(any(), anyInt(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("出库与调拨同样接受 Idempotency-Key")
+    void outboundAndAdjustAcceptKey() throws Exception {
+        mockMvc.perform(post("/api/consumables/7/outbound")
+                        .with(authentication(tokenWith("consumable:out")))
+                        .header("Idempotency-Key", "out-1")
+                        .param("quantity", "3"))
+                .andExpect(status().isOk());
+        verify(consumableService).outbound(eq(7L), eq(3), any(), any(), eq(1L), eq("out-1"));
+
+        mockMvc.perform(patch("/api/consumables/7/stock")
+                        .with(authentication(tokenWith("consumable:edit")))
+                        .header("Idempotency-Key", "adj-1")
+                        .param("delta", "-5"))
+                .andExpect(status().isOk());
+        verify(consumableService).adjustStock(eq(7L), eq(-5), any(), any(), eq(1L), eq("adj-1"));
     }
 }

@@ -1,6 +1,7 @@
 package com.zyy.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zyy.mapper.IdempotencyRecordMapper;
 import com.zyy.mapper.ConsumableMapper;
 import com.zyy.mapper.InventoryTransactionMapper;
 import com.zyy.model.dto.ConsumableSaveDTO;
@@ -38,7 +39,12 @@ class ConsumableServiceTest {
     @Mock
     private InventoryTransactionMapper transactionMapper;
 
-    @InjectMocks
+    @Mock
+    private IdempotencyRecordMapper idempotencyRecordMapper;
+
+    @Mock
+    private InventoryIdempotencyService idempotencyService;
+
     private ConsumableServiceImpl consumableService;
 
     private ConsumableEntity testEntity;
@@ -46,6 +52,10 @@ class ConsumableServiceTest {
 
     @BeforeEach
     void setUp() {
+        // 显式构造：@InjectMocks 无法为 InventoryIdempotencyService 提供可用实例
+        // （它内部依赖 mapper），会在 markSuccess 处 NPE。
+        consumableService = new ConsumableServiceImpl(
+                consumableMapper, transactionMapper, idempotencyService);
         testEntity = new ConsumableEntity();
         testEntity.setId(1L);
         testEntity.setName("测试耗材");
