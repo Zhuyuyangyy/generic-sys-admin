@@ -27,13 +27,6 @@ jobs:
           # it gitleaks uses its built-in rules and flags Spring Security's
           # generated dev password that lands in local log files.
           GITLEAKS_CONFIG: .gitleaks.toml
-          # Scan only the commits this PR/branch introduces. The repository's
-          # earlier history on master still contains a MiniMax key that was
-          # removed in a later commit there; those commits are not part of this
-          # change, so they are tracked as known pre-existing debt rather than
-          # failing this job. Commits introduced here are scanned in full.
-          GITLEAKS_LOG_OPTS: >-
-            --all --not --remotes=origin/master
 
   # ========== Python Lint & Smoke Tests ==========
   python-lint:
