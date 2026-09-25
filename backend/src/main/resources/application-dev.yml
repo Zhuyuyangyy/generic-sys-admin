@@ -28,8 +28,10 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/generic_sys_admin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: ${DB_PASSWORD:1234}
+    username: ${DB_USERNAME:root}
+    # 无默认值：本地开发请在 .env 或 shell 导出 DB_PASSWORD。
+    # 这里不写默认密码，避免 secret 扫描把占位符当成真实凭据。
+    password: ${DB_PASSWORD:}
 
   # Redis（开发时可注释掉，Redis 不可用时系统会自动降级）
   # redis:
@@ -67,13 +69,13 @@ knife4j:
 # MinIO 文档：https://min.io/docs/minio/linux/developers/python/API.html
 #
 # ⚠️ 安全提醒：正式部署时 accessKey / secretKey 必须从环境变量注入，禁止硬编码！
-#
-# 【快速启动】项目根目录执行：docker-compose -f doc/startup/minio-docker-compose.yml up -d
+# 本地开发请 export MINIO_ACCESS_KEY / MINIO_SECRET_KEY，或保持为空由
+# MinIOAvailability 检测失败后自动降级到本地文件存储。
 minio:
-  endpoint: http://localhost:9000                # MinIO 服务地址
-  access-key: minioadmin                        # 管理后台账号（默认）
-  secret-key: minioadmin                        # 管理后台密码（默认）
-  bucket-name: generic-sys-admin                # 存储桶名称（项目专用）
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}   # MinIO 服务地址
+  access-key: ${MINIO_ACCESS_KEY:}                   # 管理后台账号
+  secret-key: ${MINIO_SECRET_KEY:}                   # 管理后台密码
+  bucket-name: ${MINIO_BUCKET:generic-sys-admin}     # 存储桶名称（项目专用）
   # 公开访问URL（不填则使用 endpoint+bucketName 拼接）
   public-url: http://localhost:9000/generic-sys-admin
   # 文件大小限制（默认10MB）
@@ -164,10 +166,13 @@ mybatis-plus:
 # ==========================================================
 # 🔐 JWT 配置
 # ==========================================================
+# 不再提供默认 secret：JwtUtil.afterPropertiesSet 会检测已知弱值并拒绝启动。
+# 本地开发请在 .env 或 shell 导出 JWT_SECRET，例如：
+#   export JWT_SECRET=$(openssl rand -base64 48)
+# 这与 application.yml 的无默认值 ${JWT_SECRET:} 一致，dev 也不例外 ——
+# 占位符一旦写进配置文件，secret 扫描就无法把它和真实凭据区分开。
 jwt:
-  # ⚠️ 开发环境临时 secret，【生产必须换掉】！
-  # 推荐用环境变量：secret: ${JWT_SECRET}
-  secret: dev-secret-do-not-use-in-production-32chars!
+  secret: ${JWT_SECRET:}
   expiration: 7200          # Token 有效期（秒），2小时
   refresh-expiration: 604800  # RefreshToken 有效期（秒），7天
 
@@ -191,15 +196,16 @@ logging:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 # ==========================================================
-# 🔐 JWT：仅 dev profile 提供默认值
+# 🔐 JWT：dev 与其余 profile 一致，均要求显式 JWT_SECRET
 # ==========================================================
-# application.yml 中 sys.config.security.jwt-secret 已改为无默认值 ${JWT_SECRET:}，
-# 只有这里为本地开发提供临时值。激活 prod profile 而未设置 JWT_SECRET 时应用
-# 启动失败 —— 这是有意的 fail-fast（JwtUtil.afterPropertiesSet）。
+# application.yml 中是 sys.config.security.jwt-secret: ${JWT_SECRET:}，
+# 这里同样不给默认值。JwtUtil.afterPropertiesSet 会拒绝已知弱值与空值，
+# 本地未导出 JWT_SECRET 时启动失败属于预期。
+#   export JWT_SECRET=$(openssl rand -base64 48)
 sys:
   config:
     security:
-      jwt-secret: ${JWT_SECRET:dev-secret-do-not-use-in-production-32chars!}
+      jwt-secret: ${JWT_SECRET:}
       jwt-expiration: 7200
       jwt-refresh-expiration: 604800
       bcrypt-cost-factor: 10

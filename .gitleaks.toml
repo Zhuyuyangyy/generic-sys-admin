@@ -4,45 +4,39 @@
 # it gitleaks scans with its built-in rules and flags Spring Security's
 # generated dev password that every local startup writes into log files.
 #
-# Note on regexTarget: gitleaks allowlists default to matching against the
-# secret value ("match"). A path list therefore needs an explicit
-# regexTarget = "path", otherwise the entries are applied to the wrong string
-# and silently do nothing.
+# Note on regexTarget: a gitleaks allowlist defaults to matching the secret
+# value ("match"). A path list therefore needs an explicit regexTarget = "path",
+# otherwise its patterns are applied to the wrong string and silently do nothing.
 
 [extend]
 useDefault = true
 
-# Documented dev-only placeholder values. Kept as a second line of defence for
-# occurrences outside the files listed below.
+# Local run logs and build output. Never tracked; kept here so that a log file
+# re-added to the index is still allowed, since logs legitimately contain the
+# Spring Security generated dev password.
 [[allowlists]]
-description = "Documented dev-only placeholders"
-regexTarget = "match"
-regexes = [
-  "dev-secret-do-not-use-in-production-32chars!",
-  "minioadmin",
-  "testroot",
-  "please-change-me",
+description = "Local logs, rotated archives and build output"
+regexTarget = "path"
+paths = [
+  "logs/",
+  "\\.log$",
+  "\\.log\\.[0-9]",
+  "\\.gz$",
+  "target/",
 ]
 
-# Files whose contents are intentional placeholders or local artefacts.
-#
-# application-dev.yml is the dev profile: every credential in it is an explicit
-# placeholder that production must override, and gitleaks' generic-api-key rule
-# matches the surrounding YAML context rather than just the value. Production is
-# unaffected — application.yml carries no credentials and JWT_SECRET has no
-# default outside dev.
+# Documentation that intentionally shows placeholder values.
 [[allowlists]]
-description = "Example, docs, tests, dev profile and local logs"
+description = "Docs and env examples"
 regexTarget = "path"
 paths = [
   "^\\.env\\.example$",
   "^docs/",
   "README\\.md$",
   "REPRODUCE\\.md$",
-  "^backend/src/test/",
-  "^backend/src/main/resources/application-dev\\.yml$",
-  "logs/",
-  "\\.log$",
-  "\\.log\\.[0-9]",
-  "\\.gz$",
 ]
+
+# No application profile is allowlisted on purpose. application-dev.yml used to
+# contain a MinIO default, a dev DB password and a JWT placeholder; all three
+# were removed and the dev profile now requires explicit JWT_SECRET / DB_PASSWORD
+# like every other profile, so there is nothing to excuse.
