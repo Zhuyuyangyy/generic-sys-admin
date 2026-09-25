@@ -1,14 +1,19 @@
 # Gitleaks configuration.
 #
-# The CI action passes this file via GITLEAKS_CONFIG. Without it gitleaks falls
-# back to its built-in rules, which flag the Spring Security generated password
-# that every local startup prints into backend/logs/.
+# The CI action only reads this file when GITLEAKS_CONFIG points at it; without
+# it gitleaks scans with its built-in rules and flags Spring Security's
+# generated dev password that every local startup writes into log files.
+#
+# Note on regexTarget: gitleaks allowlists default to matching against the
+# secret value ("match"). A path list therefore needs an explicit
+# regexTarget = "path", otherwise the entries are applied to the wrong string
+# and silently do nothing.
 
 [extend]
 useDefault = true
 
-# Documented dev-only placeholder values, matched against the whole finding so
-# that "secret-key: minioadmin" and "access-key: minioadmin" both hit.
+# Documented dev-only placeholder values. Kept as a second line of defence for
+# occurrences outside the files listed below.
 [[allowlists]]
 description = "Documented dev-only placeholders"
 regexTarget = "match"
@@ -17,16 +22,18 @@ regexes = [
   "minioadmin",
   "testroot",
   "please-change-me",
-  "DB_PASSWORD:1234",
-  "dev-secret-do-not-use",
 ]
 
-# Files that intentionally show placeholders. application-dev.yml is the dev
-# profile and every credential in it is an explicit placeholder that production
-# must override; gitleaks' generic-api-key rule matches the surrounding YAML
-# context, so allowing the values alone is not enough.
+# Files whose contents are intentional placeholders or local artefacts.
+#
+# application-dev.yml is the dev profile: every credential in it is an explicit
+# placeholder that production must override, and gitleaks' generic-api-key rule
+# matches the surrounding YAML context rather than just the value. Production is
+# unaffected — application.yml carries no credentials and JWT_SECRET has no
+# default outside dev.
 [[allowlists]]
-description = "Example, docs, tests and the dev profile"
+description = "Example, docs, tests, dev profile and local logs"
+regexTarget = "path"
 paths = [
   "^\\.env\\.example$",
   "^docs/",
@@ -34,14 +41,8 @@ paths = [
   "REPRODUCE\\.md$",
   "^backend/src/test/",
   "^backend/src/main/resources/application-dev\\.yml$",
-]
-
-# Local run logs: ignored by .gitignore now, but guard against a re-add.
-[[allowlists]]
-description = "Local run logs"
-paths = [
   "logs/",
   "\\.log$",
-  "\\.log\\.[0-9]+",
+  "\\.log\\.[0-9]",
   "\\.gz$",
 ]
