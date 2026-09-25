@@ -102,7 +102,7 @@ class MigrationIT {
                 versions.add(info.getVersion().getVersion());
             }
         }
-        assertEquals(List.of("1.0", "1.1", "1.2"), versions,
+        assertEquals(List.of("1.0", "1.1", "1.2", "1.3"), versions,
                 "Flyway 必须按顺序发现 V1.0 / V1.1 / V1.2");
     }
 
@@ -110,7 +110,7 @@ class MigrationIT {
     @DisplayName("空库 migrate 应用全部 migration")
     void migrateAppliesAll() {
         int applied = flyway().migrate().migrationsExecuted;
-        assertEquals(3, applied, "空库上应恰好执行 3 个 migration");
+        assertEquals(4, applied, "空库上应恰好执行 4 个 migration");
     }
 
     @Test
