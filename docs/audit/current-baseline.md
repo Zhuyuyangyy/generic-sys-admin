@@ -23,7 +23,7 @@ uncommitted:       19 modified files, 98 staged deletions, 4 untracked paths
 | Java (test) | 16 | `backend/src/test/java` |
 | Vue components/views | 18 | `frontend/src` |
 | Python | 2 | `tests/test_smoke.py`, `tests/__init__.py` |
-| SQL migrations | 3 | `backend/src/main/resources/db/migration/` (see §6) |
+| SQL migrations | 4 | `backend/src/main/resources/db/migration/` (see §6) |
 
 Module packages under `com.zyy`:
 
@@ -92,6 +92,7 @@ build-time copy step exists, so nothing can drift.
 | 1.0 | `.../db/migration/V1.0__init.sql` | schema + seed |
 | 1.1 | `.../db/migration/V1.1__operation_log.sql` | `sys_operation_log` |
 | 1.2 | `.../db/migration/V1.2__rbac_schema_completion.sql` | `sys_menu` RBAC columns + permission seed |
+| 1.3 | `.../db/migration/V1.3__inventory_idempotency.sql` | idempotency records for stock writes |
 
 `spring.flyway.locations: classpath:db/migration` in `application.yml`. Disabled
 for H2 unit tests; `MigrationIT` exercises the real chain against Testcontainers.

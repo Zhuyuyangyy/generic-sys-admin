@@ -65,4 +65,31 @@ For inventory only: an `idempotency_key` column on `sys_inventory_transaction`
 carrying a unique constraint on `(operator_id, consumable_id, idempotency_key)`
 would collapse a retry at the ledger insert, which then also prevents the stock
 change because both happen in one transaction. Same key + different payload →
-409. This has **not been implemented** — see the README's known limitations.
+409.
+
+## Status: IMPLEMENTED (V1.3)
+
+Implemented as described below, with one deliberate deviation from this draft:
+`consumable_id` and `quantity` are NOT part of the unique key (they are payload
+and belong in the request fingerprint). The key scope is
+`(operator_id, operation, idempotency_key)`.
+
+- Table: `sys_idempotency_record`
+  (`V1.3__inventory_idempotency.sql`), columns `operator_id`, `operation`,
+  `idempotency_key`, `request_hash`, `status` (PENDING/SUCCESS/FAILED),
+  `result_reference`, `error_detail`, timestamps.
+- Unique constraint: `uk_idempotency (operator_id, operation, idempotency_key)`.
+- Claim is a plain INSERT with no existence check — the constraint is the
+  arbiter, so it holds under concurrency and across instances.
+- The claim, the atomic `stock = stock + delta`, and the ledger insert share one
+  transaction; a rollback removes all three.
+- Same key + same payload on a committed request replays the original outcome
+  without a second mutation. Same key + different payload → 409. FAILED rows are
+  deleted so the key can be retried; SUCCESS rows never are.
+- Header is optional (`Idempotency-Key`); existing clients that send nothing keep
+  the legacy unprotected behaviour.
+- NL inherits the same enforcement because `NLExecutor` resolves to the same
+  service methods — there is no second mechanism.
+
+Covered by `ConsumableIdempotencyTest` (9) and the HTTP-layer cases in
+`SecurityRuntimeAuthorizationTest` (5).

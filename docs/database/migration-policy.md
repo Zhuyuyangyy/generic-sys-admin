@@ -11,6 +11,7 @@ There is no build-time copy step, so nothing can drift.
 | 1.0 | `.../db/migration/V1.0__init.sql` | schema + seed, **no** `CREATE DATABASE`/`USE` |
 | 1.1 | `.../db/migration/V1.1__operation_log.sql` | `sys_operation_log` |
 | 1.2 | `.../db/migration/V1.2__rbac_schema_completion.sql` | `sys_menu` RBAC columns + permission seed |
+| 1.3 | `.../db/migration/V1.3__inventory_idempotency.sql` | `sys_idempotency_record` + its unique constraint |
 
 Three tests guard this arrangement:
 `test_migrations_live_at_flyway_standard_location` (they must be where Flyway

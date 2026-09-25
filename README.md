@@ -240,7 +240,10 @@ Not implemented (stated plainly):
 
 - **Multi-tenancy** — no `tenant_id` column, no tenant isolation.
 - **ABAC / data-scope filtering** — authorization is purely RBAC.
-- **Idempotency keys** on write endpoints.
+- **Idempotency keys** on write endpoints — the stock operations are protected
+  (`Idempotency-Key` header on inbound / outbound / adjust), but no other
+  endpoint accepts one. See `docs/audit/write-side-effects.md` for why the rest
+  do not need it.
 - **NL-path audit detail** — `POST /api/nl/execute` is logged, but the parsed
   intent, resolved command, and target ID are not captured.
 - **Rate limiting / brute-force lockout** beyond the login attempt counter.
@@ -265,7 +268,7 @@ Not implemented (stated plainly):
 ## Testing
 
 ```bash
-cd backend && mvn verify        # unit tests + failsafe IT (Testcontainers)
+cd backend && mvn verify        # 109 unit tests + failsafe IT (Testcontainers MySQL)
 pytest tests/ -q                # repo layout + security regressions
 ```
 
@@ -283,7 +286,8 @@ Backend highlights (`backend/src/test/java`):
 | `JwtUtilTest` | Token signing / parsing / validation; fail-fast on missing or placeholder secrets |
 | `NLExecutorTest` | Whitelist enforcement, malformed entity ids, per-command authorization, and **proof that a refused command never touches a service** |
 | `ConsumableStockInvariantTest` | Stock ≥ 0, positive quantities, and no lost update under concurrent inbounds |
-| `MigrationIT` | Flyway discovers/migrates/validates V1.0–V1.2 on real MySQL; schema + permission seed asserted |
+| `ConsumableIdempotencyTest` | Exactly-once for stock writes: same key/same payload once, same key/different payload 409, 2 and 8 concurrent identical requests yield one mutation, failed key retryable |
+| `MigrationIT` | Flyway discovers/migrates/validates V1.0–V1.3 on real MySQL; schema + permission seed asserted |
 | `SmokeTest` | Application context + core bean wiring |
 | `service.*` | Consumable and user service behaviour |
 | `experiment.*` | NL accuracy, causal propagation, end-to-end, ablation |
