@@ -7,7 +7,7 @@ backend/src/main/resources/application-dev.yml
 *.tmp
 *.swp
 *~
-logs/
+/logs/
 stderr.log
 stdout.log
 

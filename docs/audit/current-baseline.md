@@ -89,9 +89,9 @@ build-time copy step exists, so nothing can drift.
 
 | Version | File | Purpose |
 |---|---|---|
-| 1.0 | `.../db/migration/v1.0__init.sql` | schema + seed |
-| 1.1 | `.../db/migration/v1.1__operation_log.sql` | `sys_operation_log` |
-| 1.2 | `.../db/migration/v1.2__rbac_schema_completion.sql` | `sys_menu` RBAC columns + permission seed |
+| 1.0 | `.../db/migration/V1.0__init.sql` | schema + seed |
+| 1.1 | `.../db/migration/V1.1__operation_log.sql` | `sys_operation_log` |
+| 1.2 | `.../db/migration/V1.2__rbac_schema_completion.sql` | `sys_menu` RBAC columns + permission seed |
 
 `spring.flyway.locations: classpath:db/migration` in `application.yml`. Disabled
 for H2 unit tests; `MigrationIT` exercises the real chain against Testcontainers.

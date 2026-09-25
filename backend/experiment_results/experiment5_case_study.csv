@@ -1,4 +1,4 @@
 场景,输入,意图,实体ID,触发因果检查,影响节点数,hasHighImpact,响应时间(ms)
-S1,删除设备EQ-2024-001,DELETE,EQ-2024-001,true,5,true,401
-S2,修改耗材CS-2024-008的库存数量,UPDATE,CS-2024-008,true,3,true,6
-S3,查询设备EQ-2024-001的状态,UNKNOWN,EQ-2024-001,false,0,false,7
+S1,删除设备EQ-2024-001,UNKNOWN,,false,0,false,23
+S2,修改耗材CS-2024-008的库存数量,UNKNOWN,,false,0,false,5
+S3,查询设备EQ-2024-001的状态,UNKNOWN,,false,0,false,3

@@ -22,9 +22,9 @@ Create the database first, then apply the migrations in order:
 mysql -u root -p -e "CREATE DATABASE generic_sys_admin \
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/v1.0__init.sql
-mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/v1.1__operation_log.sql
-mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/v1.2__rbac_schema_completion.sql
+mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/V1.0__init.sql
+mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/V1.1__operation_log.sql
+mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/V1.2__rbac_schema_completion.sql
 ```
 
 The migration scripts contain no `CREATE DATABASE` / `USE`, so the tables land

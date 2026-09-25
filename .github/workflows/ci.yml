@@ -57,23 +57,23 @@ jobs:
           distribution: "temurin"
           cache: "maven"
 
-      - name: Build backend
+      # One command, full lifecycle: clean → resources → compile → unit tests
+      # (surefire) → integration tests (failsafe, Testcontainers) → package.
+      # Previously this ran "mvn clean compile" then a separate "mvn verify",
+      # which relied on target/ from the earlier step and made the integration
+      # classpath hard to reason about.
+      - name: Build, test, and package
         working-directory: backend
-        run: mvn clean compile -B
-
-      - name: Run unit tests
-        working-directory: backend
-        # Previously this pinned -Dtest=SmokeTest,JwtUtilTest, which silently
-        # skipped the rest of the suite (and hid 15 context-load failures).
-        # verify (not test) so the failsafe integration phase runs too.
-        run: mvn verify -B
-
-      - name: Package backend
-        working-directory: backend
-        run: mvn package -DskipTests -B
+        run: mvn clean verify -B
 
       - name: Verify JAR exists
         run: test -f backend/target/*.jar && echo "JAR built successfully"
+
+      - name: Verify migrations are inside the JAR
+        working-directory: backend
+        run: |
+          jar tf target/*.jar | grep -E "db/migration/v[0-9]" || {
+            echo "Flyway migrations missing from the JAR"; exit 1; }
 
   # ========== Frontend (Vue 3 + Vite) ==========
   frontend-build:

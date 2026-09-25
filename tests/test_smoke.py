@@ -30,9 +30,7 @@ class TestTopLevelLayout:
         """Regression: the root used to carry ~34 one-off fix_*.py / check_*.py helpers."""
         offenders = [
             name for name in os.listdir(PROJECT_ROOT)
-            if name.endswith(".py")
-            or name.endswith(".bat")
-            or name.endswith(".class")
+            if name.endswith((".py", ".bat", ".class"))
         ]
         assert offenders == [], f"scratch files leaked back into the root: {offenders}"
 
@@ -90,10 +88,10 @@ class TestSqlMigrations:
     def test_migration_versions_are_ordered_and_unique(self):
         sql_dir = os.path.join(PROJECT_ROOT, "backend", "src", "main", "resources", "db", "migration")
         if not os.path.isdir(sql_dir):
-            pytest.skip("sql/ absent")
+            pytest.skip("migration dir absent")
         versions = []
         for name in os.listdir(sql_dir):
-            match = re.match(r"v(\d+)\.(\d+)__", name)
+            match = re.match(r"V(\d+)\.(\d+)__", name)
             if match:
                 versions.append((int(match.group(1)), int(match.group(2))))
         assert versions, "no versioned migrations found"
@@ -106,7 +104,7 @@ class TestSqlMigrations:
         """
         sql_dir = os.path.join(PROJECT_ROOT, "backend", "src", "main", "resources", "db", "migration")
         if not os.path.isdir(sql_dir):
-            pytest.skip("sql/ absent")
+            pytest.skip("migration dir absent")
         offenders = []
         for name in os.listdir(sql_dir):
             if not name.endswith(".sql"):
@@ -156,6 +154,31 @@ class TestSqlMigrations:
                 continue
             assert re.match(r"[Vv]\d+\.\d+__", name), \
                 f"{name} is not a Flyway versioned migration (V<n>.<n>__desc.sql)"
+
+    def test_migrations_use_flyway_default_prefix(self):
+        """Regression: the files were named v1.0__*.sql with a lowercase v.
+
+        Flyway's default sqlMigrationPrefix is an uppercase "V" and its matching
+        is case-sensitive. On Windows/NTFS that looks fine, but on the Linux CI
+        runner Flyway scanned the classpath and reported
+        "Successfully validated 0 migrations" — a jar that shipped no schema at
+        all, so MigrationIT failed on every assertion.
+        """
+        flyway_dir = os.path.join(
+            PROJECT_ROOT, "backend", "src", "main", "resources", "db", "migration"
+        )
+        if not os.path.isdir(flyway_dir):
+            pytest.skip("flyway dir absent")
+        for name in os.listdir(flyway_dir):
+            if not name.endswith(".sql"):
+                continue
+            assert name.startswith("V"), (
+                f"{name}: Flyway's default prefix is an uppercase V; a lowercase "
+                "v is silently ignored on case-sensitive filesystems (Linux CI)"
+            )
+            assert re.match(r"V\d+\.\d+__.+\.sql$", name), (
+                f"{name}: expected V<major>.<minor>__<description>.sql"
+            )
 
 
 class TestSecurityRegression:

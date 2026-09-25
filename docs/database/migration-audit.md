@@ -12,9 +12,9 @@ that is the only copy. There is no build-time copy step, so nothing can drift.
 
 | Order | File | Notes |
 |---|---|---|
-| 1.0 | `.../db/migration/v1.0__init.sql` | schema + seed, **no** `CREATE DATABASE`/`USE` |
-| 1.1 | `.../db/migration/v1.1__operation_log.sql` | `sys_operation_log` |
-| 1.2 | `.../db/migration/v1.2__rbac_schema_completion.sql` | `sys_menu` RBAC columns + permission seed |
+| 1.0 | `.../db/migration/V1.0__init.sql` | schema + seed, **no** `CREATE DATABASE`/`USE` |
+| 1.1 | `.../db/migration/V1.1__operation_log.sql` | `sys_operation_log` |
+| 1.2 | `.../db/migration/V1.2__rbac_schema_completion.sql` | `sys_menu` RBAC columns + permission seed |
 
 ### Why they moved here
 
@@ -136,20 +136,20 @@ If no Docker daemon is reachable the class aborts with a skip, so a local
 
 ```
 1. DROP/CREATE erms_migrate_test (utf8mb4 / utf8mb4_unicode_ci)
-2. backend/src/main/resources/db/migration/v1.0__init.sql                          → OK (10 tables + seed)
-3. backend/src/main/resources/db/migration/v1.1__operation_log.sql                 → OK
-4. backend/src/main/resources/db/migration/v1.2__rbac_schema_completion.sql        → OK
-5. backend/src/main/resources/db/migration/v1.2__rbac_schema_completion.sql (re-run) → OK
+2. backend/src/main/resources/db/migration/V1.0__init.sql                          → OK (10 tables + seed)
+3. backend/src/main/resources/db/migration/V1.1__operation_log.sql                 → OK
+4. backend/src/main/resources/db/migration/V1.2__rbac_schema_completion.sql        → OK
+5. backend/src/main/resources/db/migration/V1.2__rbac_schema_completion.sql (re-run) → OK
 ```
 
 ### What was actually executed
 
 ```
 1. DROP/CREATE erms_migrate_test (utf8mb4 / utf8mb4_unicode_ci)
-2. backend/src/main/resources/db/migration/v1.0__init.sql            → OK   (10 tables + seed)
-3. backend/src/main/resources/db/migration/v1.1__operation_log.sql   → OK
-4. backend/src/main/resources/db/migration/v1.2__rbac_schema_completion.sql → OK
-5. backend/src/main/resources/db/migration/v1.2__rbac_schema_completion.sql (re-run, idempotency) → OK, no error
+2. backend/src/main/resources/db/migration/V1.0__init.sql            → OK   (10 tables + seed)
+3. backend/src/main/resources/db/migration/V1.1__operation_log.sql   → OK
+4. backend/src/main/resources/db/migration/V1.2__rbac_schema_completion.sql → OK
+5. backend/src/main/resources/db/migration/V1.2__rbac_schema_completion.sql (re-run, idempotency) → OK, no error
 ```
 
 ### Results
@@ -173,7 +173,7 @@ Administrator role. Seeded-but-unused values: `system:menu:add`,
 
 ### Defect found and fixed by this run
 
-`backend/src/main/resources/db/migration/v1.0__init.sql` and  began with
+`backend/src/main/resources/db/migration/V1.0__init.sql` and  began with
 `CREATE DATABASE IF NOT EXISTS generic_sys_admin …; USE generic_sys_admin;`.
 Importing into any other database silently created all tables inside
 `generic_sys_admin`, so `v1.2` then failed with

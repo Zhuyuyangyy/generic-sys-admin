@@ -1,4 +1,4 @@
 Config,Intent Acc,Overall Acc,Avg Latency,Impact Warnings
-A - NL Only,83.00%,83.00%,0.04ms,0
-B - Full System,83.00%,83.00%,0.04ms,32
+A - NL Only,83.00%,83.00%,0.03ms,0
+B - Full System,83.00%,83.00%,0.03ms,30
 C - Causal Only,N/A,N/A,0.00ms,N/A

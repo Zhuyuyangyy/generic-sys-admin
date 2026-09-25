@@ -101,9 +101,9 @@ cd backend && mvn spring-boot:run        # Flyway migrates automatically
 To apply the migrations by hand instead, read the same files Flyway uses:
 
 ```bash
-mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/v1.0__init.sql
-mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/v1.1__operation_log.sql
-mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/v1.2__rbac_schema_completion.sql
+mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/V1.0__init.sql
+mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/V1.1__operation_log.sql
+mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/V1.2__rbac_schema_completion.sql
 ```
 
 The migration scripts deliberately contain **no** `CREATE DATABASE` / `USE` —
@@ -321,9 +321,9 @@ generic-sys-admin/
 │   ├── src/main/resources/
 │   │   ├── application*.yml, logback
 │   │   └── db/migration/
-│   │       ├── v1.0__init.sql            ← Flyway migrations (tracked, single copy)
-│   │       ├── v1.1__operation_log.sql
-│   │       └── v1.2__rbac_schema_completion.sql
+│   │       ├── V1.0__init.sql            ← Flyway migrations (tracked, single copy)
+│   │       ├── V1.1__operation_log.sql
+│   │       └── V1.2__rbac_schema_completion.sql
 │   └── src/test/java/com/zyy/
 │       ├── database/MigrationIT.java            ← Testcontainers + Flyway
 │       ├── nl/ security/ service/

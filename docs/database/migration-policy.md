@@ -8,9 +8,9 @@ There is no build-time copy step, so nothing can drift.
 
 | Order | File | Notes |
 |---|---|---|
-| 1.0 | `.../db/migration/v1.0__init.sql` | schema + seed, **no** `CREATE DATABASE`/`USE` |
-| 1.1 | `.../db/migration/v1.1__operation_log.sql` | `sys_operation_log` |
-| 1.2 | `.../db/migration/v1.2__rbac_schema_completion.sql` | `sys_menu` RBAC columns + permission seed |
+| 1.0 | `.../db/migration/V1.0__init.sql` | schema + seed, **no** `CREATE DATABASE`/`USE` |
+| 1.1 | `.../db/migration/V1.1__operation_log.sql` | `sys_operation_log` |
+| 1.2 | `.../db/migration/V1.2__rbac_schema_completion.sql` | `sys_menu` RBAC columns + permission seed |
 
 Three tests guard this arrangement:
 `test_migrations_live_at_flyway_standard_location` (they must be where Flyway
@@ -44,7 +44,7 @@ Creating the database is the caller's job:
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE erms CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p erms < backend/src/main/resources/db/migration/v1.0__init.sql
+mysql -u root -p erms < backend/src/main/resources/db/migration/V1.0__init.sql
 ```
 
 `tests/test_smoke.py::test_migrations_do_not_switch_database` guards this.
@@ -85,7 +85,7 @@ Full commands, recorded output, and the `CREATE DATABASE`/`USE` defect are in
 ```bash
 mysql -u root -p -e "DROP DATABASE IF EXISTS erms_migrate_test;
   CREATE DATABASE erms_migrate_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-for f in backend/src/main/resources/db/migration/v1.0__init.sql backend/src/main/resources/db/migration/v1.1__operation_log.sql backend/src/main/resources/db/migration/v1.2__rbac_schema_completion.sql; do
+for f in backend/src/main/resources/db/migration/V1.0__init.sql backend/src/main/resources/db/migration/V1.1__operation_log.sql backend/src/main/resources/db/migration/V1.2__rbac_schema_completion.sql; do
   mysql -u root -p erms_migrate_test < "$f" || echo "FAILED: $f"
 done
 mysql -u root -p erms_migrate_test -e "
