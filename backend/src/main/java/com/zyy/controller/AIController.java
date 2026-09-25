@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -45,6 +46,7 @@ public class AIController {
      */
     @PostMapping("/tts")
     @Operation(summary = "语音合成", description = "调用 MiniMax speech-01 模型将文本转为语音")
+    @PreAuthorize("@ss.hasAuthority('ai:tts')")
     public Result<Map<String, String>> tts(
             @Parameter(description = "合成文本") @RequestParam String text,
             @Parameter(description = "音色选择") @RequestParam(defaultValue = "male-qn-qingse") String voice) {
@@ -90,6 +92,7 @@ public class AIController {
      */
     @PostMapping("/image")
     @Operation(summary = "图像生成", description = "调用 MiniMax image-01 模型根据文本描述生成图像")
+    @PreAuthorize("@ss.hasAuthority('ai:image')")
     public Result<Map<String, String>> generateImage(
             @Parameter(description = "图像描述（英文效果更佳）") @RequestParam String prompt,
             @Parameter(description = "图像尺寸：1:1/16:9/9:16/3:4/4:3") @RequestParam(defaultValue = "1:1") String aspectRatio) {
@@ -145,6 +148,7 @@ public class AIController {
      */
     @PostMapping("/video/generate")
     @Operation(summary = "视频生成", description = "调用 MiniMax video-01 模型根据文本描述生成视频（异步，提交后返回 jobId）")
+    @PreAuthorize("@ss.hasAuthority('ai:video')")
     public Result<Map<String, String>> generateVideo(
             @Parameter(description = "视频描述") @RequestParam String prompt,
             @Parameter(description = "视频时长（秒）：5/10") @RequestParam(defaultValue = "5") Integer duration) {
@@ -187,6 +191,7 @@ public class AIController {
      */
     @GetMapping("/video/status/{jobId}")
     @Operation(summary = "查询视频生成状态", description = "根据 jobId 查询视频生成进度及结果 URL")
+    @PreAuthorize("@ss.hasAuthority('ai:video')")
     public Result<Map<String, String>> getVideoStatus(
             @Parameter(description = "视频任务 ID") @PathVariable String jobId) {
 

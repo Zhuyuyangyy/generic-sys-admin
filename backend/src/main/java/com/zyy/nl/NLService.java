@@ -52,14 +52,14 @@ public class NLService {
         if (result.getIntent() == null) {
             return "无法识别的意图，请检查输入格式";
         }
-        String method = ruleEngine.resolveService(result);
-        if (method == null) {
-            return "未找到对应的Service方法";
+        NLRuleEngine.Resolved resolved = ruleEngine.resolve(result);
+        if (resolved == null) {
+            return "该意图暂不支持通过自然语言执行";
         }
         String entityId = result.getEntityIds().isEmpty()
                 ? null : result.getEntityIds().get(0);
-        Object output = executor.dispatch(method, entityId);
-        return output != null ? output.toString() : "执行完成，无返回数据";
+        return String.valueOf(
+                executor.dispatch(resolved.service(), resolved.method(), entityId));
     }
 
     /**
@@ -105,13 +105,13 @@ public class NLService {
         }
 
         // ── Step 3：执行实际业务操作 ─────────────────────────────
-        String method = ruleEngine.resolveService(result);
+        NLRuleEngine.Resolved resolved = ruleEngine.resolve(result);
         String executionResult;
-        if (method == null) {
-            executionResult = "未找到对应的Service方法";
+        if (resolved == null) {
+            executionResult = "该意图暂不支持通过自然语言执行";
         } else {
-            Object output = executor.dispatch(method, entityId);
-            executionResult = output != null ? output.toString() : "执行完成，无返回数据";
+            executionResult = String.valueOf(
+                    executor.dispatch(resolved.service(), resolved.method(), entityId));
         }
 
         // ── Step 4：构造因果报告 ──────────────────────────────────

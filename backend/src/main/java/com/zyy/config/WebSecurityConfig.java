@@ -1,9 +1,12 @@
 package com.zyy.config;
 
 import com.zyy.security.JwtAuthFilter;
+import com.zyy.security.SecurityErrorHandlers;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -41,6 +44,7 @@ import java.util.List;
 public class WebSecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -51,13 +55,20 @@ public class WebSecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
+            // 401 未认证 / 403 权限不足，且都返回统一的 Result JSON
+            .exceptionHandling(ex -> ex
+                    .authenticationEntryPoint(new SecurityErrorHandlers
+                            .RestAuthenticationEntryPoint(objectMapper))
+                    .accessDeniedHandler(new SecurityErrorHandlers
+                            .RestAccessDeniedHandler(objectMapper))
+            )
             .authorizeHttpRequests(auth -> auth
                 // ========== 公开接口（无需认证） ==========
-                .requestMatchers(
-                    "/api/users/login",          // 登录
-                    "/api/users/refresh-token", // 刷新Token
-                    "/api/users"                 // 注册（如果开放）
-                ).permitAll()
+                // 只放行登录与刷新 token。注册必须指明 HTTP 方法：
+                // requestMatchers("/api/users") 会匹配该路径下的所有方法，
+                // 导致 GET /api/users（用户列表）也能被匿名访问。
+                .requestMatchers(HttpMethod.POST, "/api/users/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/users/refresh-token").permitAll()
 
                 // ========== Swagger / Knife4j 文档 ==========
                 .requestMatchers(
@@ -70,14 +81,12 @@ public class WebSecurityConfig {
                 ).permitAll()
 
                 // ========== Actuator 健康检查 ==========
-                .requestMatchers("/actuator/health").permitAll()
+                // 仅 health/info 公开；metrics 等端点需管理员
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
 
-                // ========== 文件上传/下载 ==========
-                .requestMatchers("/api/files/upload").authenticated()
-                .requestMatchers("/api/files/**").authenticated()
-
                 // ========== 所有其他接口需要认证 ==========
+                // 具体接口再用 @PreAuthorize 做权限细化
                 .anyRequest().authenticated()
             )
 

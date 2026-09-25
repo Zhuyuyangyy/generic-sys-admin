@@ -136,36 +136,37 @@ class ConsumableServiceTest {
     @DisplayName("出库操作减少库存")
     void outboundReducesStock() {
         when(consumableMapper.selectById(1L)).thenReturn(testEntity);
-        when(consumableMapper.updateById(any())).thenReturn(1);
+        when(consumableMapper.adjustStockAtomic(eq(1L), anyInt())).thenReturn(1);
         when(transactionMapper.insert(any())).thenReturn(1);
 
         consumableService.outbound(1L, 10, "REF001", "出库测试", 1L);
 
-        ArgumentCaptor<ConsumableEntity> captor = ArgumentCaptor.forClass(ConsumableEntity.class);
-        verify(consumableMapper).updateById(captor.capture());
-        assertEquals(90, captor.getValue().getStockQuantity()); // 100 - 10
+        // 库存变更必须走原子 SQL，而不是读出来算好再整行写回
+        verify(consumableMapper).adjustStockAtomic(1L, -10);
+        verify(consumableMapper, never()).updateById(any());
     }
 
     @Test
     @DisplayName("出库数量超过库存时抛出异常")
     void outboundOverStockThrows() {
         when(consumableMapper.selectById(1L)).thenReturn(testEntity);
+        when(consumableMapper.adjustStockAtomic(eq(1L), anyInt())).thenReturn(0);
 
         assertThrows(Exception.class, () -> consumableService.outbound(1L, 200, "REF001", "超量出库", 1L));
+        verify(transactionMapper, never()).insert(any());
     }
 
     @Test
     @DisplayName("入库操作增加库存")
     void inboundIncreasesStock() {
         when(consumableMapper.selectById(1L)).thenReturn(testEntity);
-        when(consumableMapper.updateById(any())).thenReturn(1);
+        when(consumableMapper.adjustStockAtomic(eq(1L), anyInt())).thenReturn(1);
         when(transactionMapper.insert(any())).thenReturn(1);
 
         consumableService.inbound(1L, 50, "REF002", "入库测试", 1L);
 
-        ArgumentCaptor<ConsumableEntity> captor = ArgumentCaptor.forClass(ConsumableEntity.class);
-        verify(consumableMapper).updateById(captor.capture());
-        assertEquals(150, captor.getValue().getStockQuantity()); // 100 + 50
+        verify(consumableMapper).adjustStockAtomic(1L, 50);
+        verify(consumableMapper, never()).updateById(any());
     }
 
     @Test

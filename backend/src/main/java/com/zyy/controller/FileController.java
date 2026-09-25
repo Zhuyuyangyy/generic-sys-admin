@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -71,6 +72,7 @@ public class FileController {
      * @return Result containing the file URL and metadata
      */
     @PostMapping("/upload")
+    @PreAuthorize("@ss.hasAuthority('file:upload')")
     @Operation(
         summary = "Upload file",
         description = "Upload a single file to MinIO. Returns the accessible URL.",
@@ -143,6 +145,7 @@ public class FileController {
      * @return Result containing success/failure counts and file metadata
      */
     @PostMapping("/upload/batch")
+    @PreAuthorize("@ss.hasAuthority('file:upload')")
     @Operation(
         summary = "Batch upload files",
         description = "Upload multiple files in one request. Maximum 20 files per batch."
@@ -204,6 +207,7 @@ public class FileController {
      * @return Operation result
      */
     @DeleteMapping
+    @PreAuthorize("@ss.hasAuthority('file:del')")
     @Operation(
         summary = "Delete file",
         description = "Delete a file from MinIO storage by its URL"
@@ -235,6 +239,7 @@ public class FileController {
      * @return Operation result with success/failure counts
      */
     @DeleteMapping("/batch")
+    @PreAuthorize("@ss.hasAuthority('file:del')")
     @Operation(
         summary = "Batch delete files",
         description = "Delete multiple files from MinIO storage"

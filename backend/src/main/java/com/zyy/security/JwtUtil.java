@@ -11,6 +11,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -30,6 +31,16 @@ public class JwtUtil implements InitializingBean {
     private long expiration; // 秒，默认2小时
     private long refreshExpiration; // 秒，7天
 
+    /** 已知弱默认值，出现即视为未配置（fail-fast）。 */
+    private static final Set<String> KNOWN_WEAK_SECRETS = Set.of(
+            "dev-secret-do-not-use-in-production-32chars!",
+            "123456",
+            "please-change-me",
+            "default-secret",
+            "secret",
+            "changeme"
+    );
+
     @Override
     public void afterPropertiesSet() {
         String secret = appProperties.getSecurity().getJwtSecret();
@@ -38,6 +49,12 @@ public class JwtUtil implements InitializingBean {
                 "JWT_SECRET environment variable must be set! " +
                 "Production requires a strong secret key (minimum 32 characters). " +
                 "Generate one with: openssl rand -base64 64");
+        }
+        if (KNOWN_WEAK_SECRETS.contains(secret.trim())) {
+            throw new IllegalStateException(
+                "JWT_SECRET still holds the placeholder default value. " +
+                "Set a real secret via the JWT_SECRET environment variable; " +
+                "generate one with: openssl rand -base64 64");
         }
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expiration = appProperties.getSecurity().getJwtExpiration();

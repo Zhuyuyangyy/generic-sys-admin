@@ -17,7 +17,7 @@
     <packaging>jar</packaging>
 
     <name>generic-sys-admin</name>
-    <description>通用管理系统母版 - SpringBoot3 + Vue3</description>
+    <description>ERMS — enterprise resource management with a guarded natural-language execution path</description>
 
     <properties>
         <java.version>17</java.version>
@@ -27,7 +27,9 @@
         <springdoc.version>2.3.0</springdoc.version>
         <easyexcel.version>3.3.2</easyexcel.version>
         <freemarker.version>2.3.32</freemarker.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.46</lombok.version>
+        <flyway.version>10.20.0</flyway.version>
+        <testcontainers.version>1.20.4</testcontainers.version>
     </properties>
 
     <dependencies>
@@ -124,7 +126,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
+            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
 
@@ -149,10 +151,35 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Spring Security 测试支持（MockMvc + @WithMockUser + SecurityMockMvcRequestPostProcessors） -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- H2 Database (测试用内存数据库) -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Flyway（schema 版本管理，migration 位于 classpath:db/migration） -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
+
+        <!-- Testcontainers（IT：真实 MySQL 容器 + Flyway） -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -172,6 +199,17 @@
     </dependencies>
 
     <build>
+        <!--
+            单一来源原则：Flyway migration 只存在于仓库根 sql/。
+            这里把它复制到 target/classes/db/migration，Spring Boot 才能以
+            classpath:db/migration 读到。手工执行 mysql CLI 也直接读 sql/，
+            两者永远是同一份文件，不存在副本漂移。
+        -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -182,6 +220,13 @@
                     <target>17</target>
                     <release>17</release>
                     <encoding>UTF-8</encoding>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
@@ -194,6 +239,30 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+
+            <!--
+              集成测试（*IT.java）走 failsafe，绑定到 verify 阶段。
+              Unit tests（surefire, *Test.java）继续绑定到 test 阶段。
+              本地无 Docker 时 IT 会自行 skip，不会让 mvn verify 失败。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.5.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
                 </configuration>
             </plugin>
         </plugins>

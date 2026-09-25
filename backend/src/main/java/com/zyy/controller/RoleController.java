@@ -5,7 +5,7 @@ import com.zyy.common.Result;
 import com.zyy.model.entity.SysRoleEntity;
 import com.zyy.model.vo.PageVO;
 import com.zyy.model.vo.SysRoleVO;
-import com.zyy.security.LoginUser;
+import com.zyy.security.SecurityUtils;
 import com.zyy.service.SysRoleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,8 +13,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +29,7 @@ import java.util.List;
 public class RoleController {
 
     private final SysRoleService roleService;
+    private final SecurityUtils securityUtils;
 
     @GetMapping
     @PreAuthorize("@ss.hasAuthority('system:role:list')")
@@ -90,13 +91,6 @@ public class RoleController {
      * 从 Spring Security Context 获取当前登录用户ID
      */
     private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getPrincipal() == null) {
-            throw new com.zyy.exception.UnauthorizedException("用户未登录");
-        }
-        if (authentication.getPrincipal() instanceof LoginUser loginUser) {
-            return loginUser.getUserId();
-        }
-        throw new com.zyy.exception.UnauthorizedException("无法获取用户信息");
+        return securityUtils.currentUserId();
     }
 }

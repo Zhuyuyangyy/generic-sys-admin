@@ -10,6 +10,7 @@ import com.zyy.model.dto.SysUserUpdateDTO;
 import com.zyy.model.vo.PageVO;
 import com.zyy.model.vo.SysUserLoginVO;
 import com.zyy.model.vo.SysUserVO;
+import com.zyy.security.SecurityUtils;
 import com.zyy.service.SysUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,6 +20,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -47,6 +49,7 @@ import org.springframework.web.bind.annotation.*;
 public class SysUserController {
 
     private final SysUserService userService;
+    private final SecurityUtils securityUtils;
 
     // ==================== Authentication Endpoints ====================
 
@@ -84,16 +87,15 @@ public class SysUserController {
      * Register a new user account.
      *
      * @param saveDTO Registration data
-     * @param request HTTP request for operator context
      * @return Created user profile
      */
     @PostMapping
+    @PreAuthorize("@ss.hasAuthority('system:user:add')")
     @Operation(summary = "Register user", description = "Create a new user account with encoded password")
     public Result<SysUserVO> register(
-            @Valid @RequestBody SysUserSaveDTO saveDTO,
-            HttpServletRequest request) {
+            @Valid @RequestBody SysUserSaveDTO saveDTO) {
 
-        Long operatorId = getCurrentUserId(request);
+        Long operatorId = getCurrentUserId();
         SysUserVO user = userService.register(saveDTO, operatorId);
         return Result.ok(user, "User registered successfully");
     }
@@ -103,13 +105,12 @@ public class SysUserController {
     /**
      * Get current authenticated user's profile.
      *
-     * @param request HTTP request
      * @return Current user profile
      */
     @GetMapping("/me")
     @Operation(summary = "Get current user", description = "Retrieve profile of the currently authenticated user")
-    public Result<SysUserVO> getCurrentUser(HttpServletRequest request) {
-        Long userId = getCurrentUserId(request);
+    public Result<SysUserVO> getCurrentUser() {
+        Long userId = getCurrentUserId();
         SysUserVO user = userService.getById(userId);
         return Result.ok(user);
     }
@@ -118,16 +119,14 @@ public class SysUserController {
      * Update current user's profile.
      *
      * @param updateDTO Updated profile data
-     * @param request   HTTP request
      * @return Updated profile
      */
     @PutMapping("/me")
     @Operation(summary = "Update current user profile", description = "Update profile information for authenticated user")
     public Result<SysUserVO> updateCurrentUser(
-            @Valid @RequestBody SysUserUpdateDTO updateDTO,
-            HttpServletRequest request) {
+            @Valid @RequestBody SysUserUpdateDTO updateDTO) {
 
-        Long userId = getCurrentUserId(request);
+        Long userId = getCurrentUserId();
         updateDTO.setId(userId);
         SysUserVO user = userService.updateProfile(updateDTO, userId);
         return Result.ok(user, "Profile updated successfully");
@@ -137,16 +136,14 @@ public class SysUserController {
      * Change current user's password.
      *
      * @param passwordDTO Password change request
-     * @param request     HTTP request
      * @return Operation result
      */
     @PutMapping("/me/password")
     @Operation(summary = "Change password", description = "Update password for authenticated user")
     public Result<Void> changePassword(
-            @Valid @RequestBody SysUserPasswordDTO passwordDTO,
-            HttpServletRequest request) {
+            @Valid @RequestBody SysUserPasswordDTO passwordDTO) {
 
-        Long userId = getCurrentUserId(request);
+        Long userId = getCurrentUserId();
         passwordDTO.setUserId(userId);
         userService.changePassword(passwordDTO, userId);
         return Result.ok(null, "Password changed successfully");
@@ -161,6 +158,7 @@ public class SysUserController {
      * @return User profile
      */
     @GetMapping("/{id}")
+    @PreAuthorize("@ss.hasAuthority('system:user:list')")
     @Operation(summary = "Get user by ID", description = "Retrieve user profile by unique identifier")
     public Result<SysUserVO> getById(
             @Parameter(description = "User ID") @PathVariable Long id) {
@@ -178,6 +176,7 @@ public class SysUserController {
      * @return Paginated user list
      */
     @GetMapping
+    @PreAuthorize("@ss.hasAuthority('system:user:list')")
     @Operation(summary = "List users", description = "Retrieve paginated list of users with optional filters")
     public Result<PageVO<SysUserVO>> getPage(
             @Valid PageParam pageParam,
@@ -200,17 +199,16 @@ public class SysUserController {
      *
      * @param id      Target user ID
      * @param updateDTO Updated profile data
-     * @param request HTTP request
      * @return Updated profile
      */
     @PutMapping("/{id}")
+    @PreAuthorize("@ss.hasAuthority('system:user:edit')")
     @Operation(summary = "Update user", description = "Update user profile (admin operation)")
     public Result<SysUserVO> update(
             @Parameter(description = "User ID") @PathVariable Long id,
-            @Valid @RequestBody SysUserUpdateDTO updateDTO,
-            HttpServletRequest request) {
+            @Valid @RequestBody SysUserUpdateDTO updateDTO) {
 
-        Long operatorId = getCurrentUserId(request);
+        Long operatorId = getCurrentUserId();
         updateDTO.setId(id);
         SysUserVO user = userService.updateProfile(updateDTO, operatorId);
         return Result.ok(user, "User updated successfully");
@@ -221,17 +219,16 @@ public class SysUserController {
      *
      * @param id      Target user ID
      * @param enabled  True to enable, false to disable
-     * @param request HTTP request
      * @return Operation result
      */
     @PatchMapping("/{id}/status")
+    @PreAuthorize("@ss.hasAuthority('system:user:edit')")
     @Operation(summary = "Set user status", description = "Enable or disable user account")
     public Result<Void> setStatus(
             @Parameter(description = "User ID") @PathVariable Long id,
-            @Parameter(description = "Enabled status") @RequestParam boolean enabled,
-            HttpServletRequest request) {
+            @Parameter(description = "Enabled status") @RequestParam boolean enabled) {
 
-        Long operatorId = getCurrentUserId(request);
+        Long operatorId = getCurrentUserId();
         userService.setStatus(id, enabled, operatorId);
         return Result.ok(null, enabled ? "User enabled" : "User disabled");
     }
@@ -240,16 +237,15 @@ public class SysUserController {
      * Lock user account.
      *
      * @param id      Target user ID
-     * @param request HTTP request
      * @return Operation result
      */
     @PostMapping("/{id}/lock")
+    @PreAuthorize("@ss.hasAuthority('system:user:edit')")
     @Operation(summary = "Lock user account", description = "Temporarily lock user account due to policy violation")
     public Result<Void> lock(
-            @Parameter(description = "User ID") @PathVariable Long id,
-            HttpServletRequest request) {
+            @Parameter(description = "User ID") @PathVariable Long id) {
 
-        Long operatorId = getCurrentUserId(request);
+        Long operatorId = getCurrentUserId();
         userService.lockAccount(id, operatorId);
         return Result.ok(null, "User account locked");
     }
@@ -258,16 +254,15 @@ public class SysUserController {
      * Unlock user account.
      *
      * @param id      Target user ID
-     * @param request HTTP request
      * @return Operation result
      */
     @PostMapping("/{id}/unlock")
+    @PreAuthorize("@ss.hasAuthority('system:user:edit')")
     @Operation(summary = "Unlock user account", description = "Remove account lockout and reset failed attempts")
     public Result<Void> unlock(
-            @Parameter(description = "User ID") @PathVariable Long id,
-            HttpServletRequest request) {
+            @Parameter(description = "User ID") @PathVariable Long id) {
 
-        Long operatorId = getCurrentUserId(request);
+        Long operatorId = getCurrentUserId();
         userService.unlockAccount(id, operatorId);
         return Result.ok(null, "User account unlocked");
     }
@@ -276,16 +271,15 @@ public class SysUserController {
      * Delete user (soft delete).
      *
      * @param id      Target user ID
-     * @param request HTTP request
      * @return Operation result
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("@ss.hasAuthority('system:user:del')")
     @Operation(summary = "Delete user", description = "Soft delete user account (logical removal)")
     public Result<Void> delete(
-            @Parameter(description = "User ID") @PathVariable Long id,
-            HttpServletRequest request) {
+            @Parameter(description = "User ID") @PathVariable Long id) {
 
-        Long operatorId = getCurrentUserId(request);
+        Long operatorId = getCurrentUserId();
         userService.delete(id, operatorId);
         return Result.ok(null, "User deleted successfully");
     }
@@ -308,17 +302,7 @@ public class SysUserController {
         return request.getRemoteAddr();
     }
 
-    /**
-     * Extract current user ID from security context.
-     * Placeholder implementation - integrate with Spring Security for production.
-     */
-    private Long getCurrentUserId(HttpServletRequest request) {
-        // In production, extract from Security Context
-        // return ((LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUserId();
-        Object attribute = request.getAttribute("userId");
-        if (attribute instanceof Long) {
-            return (Long) attribute;
-        }
-        return 1L; // Default for development
+    private Long getCurrentUserId() {
+        return securityUtils.currentUserId();
     }
 }

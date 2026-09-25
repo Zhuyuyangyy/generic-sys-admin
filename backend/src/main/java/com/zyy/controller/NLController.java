@@ -6,6 +6,7 @@ import com.zyy.common.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +29,7 @@ public class NLController {
     private final CausalDAGService causalDAGService;
 
     @PostMapping("/execute")
+    @PreAuthorize("@ss.hasAuthority('nl:execute')")
     @Operation(summary = "执行自然语言指令（标准）")
     public Result<String> execute(@RequestBody Map<String, String> request) {
         String input = request.get("input");
@@ -43,6 +45,7 @@ public class NLController {
      * DELETE/UPDATE操作前自动预测下游影响范围，返回执行结果+影响节点列表。
      */
     @PostMapping("/execute-with-causal-check")
+    @PreAuthorize("@ss.hasAuthority('nl:execute')")
     @Operation(summary = "执行NL指令并预测因果影响（专利核心证据接口）")
     public Result<NLService.CausalCheckResult> executeWithCausalCheck(
             @RequestBody Map<String, String> request) {

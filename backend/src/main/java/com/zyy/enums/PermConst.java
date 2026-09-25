@@ -11,7 +11,7 @@ package com.zyy.enums;
  *     - 用户新增（system:user:add）
  *     - 用户修改（system:user:edit）
  *     - 用户删除（system:user:del）
- *     - 用户导出（system:user:export）
+
  *   - 角色管理（system:role:*）
  *   - 菜单管理（system:menu:*）
  *   - 操作日志（system:log:*）
@@ -40,7 +40,6 @@ public enum PermConst {
     USER_ADD("system:user:add", "用户新增"),
     USER_EDIT("system:user:edit", "用户修改"),
     USER_DEL("system:user:del", "用户删除"),
-    USER_EXPORT("system:user:export", "用户导出"),
     USER_RESET_PWD("system:user:resetPwd", "重置密码"),
     USER_ASSIGN_ROLE("system:user:assignRole", "分配角色"),
 
@@ -52,10 +51,11 @@ public enum PermConst {
     ROLE_GRANT("system:role:grant", "角色授权"),
 
     // 菜单管理
+    // 注意：只有 MENU_LIST 真实使用。MenuController 仅暴露读取端点，
+    // 前端 menu.ts 也只有 getCurrentUserMenus。add/edit/del 曾是 seed 中的
+    // 幽灵权限（无 Controller、无 Service 用例、无前端调用），已删除——
+    // 不为了"权限表看起来完整"而保留无消费者的常量。
     MENU_LIST("system:menu:list", "菜单查询"),
-    MENU_ADD("system:menu:add", "菜单新增"),
-    MENU_EDIT("system:menu:edit", "菜单修改"),
-    MENU_DEL("system:menu:del", "菜单删除"),
 
     // 操作日志
     LOG_LIST("system:log:list", "日志查询"),
@@ -73,12 +73,19 @@ public enum PermConst {
     // ========== 耗材管理 ==========
     CONSUMABLE("consumable", "耗材管理"),
     CONSUMABLE_LIST("consumable:list", "耗材查询"),
+    CONSUMABLE_DETAIL("consumable:detail", "耗材详情"),
     CONSUMABLE_ADD("consumable:add", "耗材新增"),
     CONSUMABLE_EDIT("consumable:edit", "耗材修改"),
     CONSUMABLE_DEL("consumable:del", "耗材删除"),
     CONSUMABLE_IN("consumable:in", "耗材入库"),
     CONSUMABLE_OUT("consumable:out", "耗材出库"),
     CONSUMABLE_EXPORT("consumable:export", "耗材导出"),
+
+    // ========== 巡检记录 ==========
+    INVENTORY_LIST("inventory:list", "巡检记录查询"),
+    INVENTORY_ADD("inventory:add", "巡检记录新增"),
+    INVENTORY_EDIT("inventory:edit", "巡检记录修改"),
+    INVENTORY_DEL("inventory:del", "巡检记录删除"),
 
     // ========== AI工作室 ==========
     AI("ai", "AI工作室"),
@@ -87,6 +94,13 @@ public enum PermConst {
     AI_IMAGE("ai:image", "图片生成"),
     AI_MUSIC("ai:music", "音乐生成"),
     AI_VIDEO("ai:video", "视频生成"),
+
+    // ========== 文件存储 ==========
+    FILE_UPLOAD("file:upload", "文件上传"),
+    FILE_DEL("file:del", "文件删除"),
+
+    // ========== 自然语言业务流 ==========
+    NL_EXECUTE("nl:execute", "自然语言指令执行"),
 
     // ========== 仪表盘 ==========
     DASHBOARD("dashboard", "仪表盘"),

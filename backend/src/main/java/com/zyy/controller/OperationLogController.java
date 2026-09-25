@@ -30,7 +30,7 @@ public class OperationLogController {
 
     @GetMapping
     @Operation(summary = "操作日志列表", description = "分页查询操作日志，支持多条件筛选")
-    @PreAuthorize("hasAuthority('sys:log:list')")
+    @PreAuthorize("@ss.hasAuthority('system:log:list')")
     public Result<PageVO<SysOperationLogEntity>> getPage(
             @Valid PageParam pageParam,
             @Parameter(description = "操作模块") @RequestParam(required = false) String module,
@@ -48,7 +48,7 @@ public class OperationLogController {
 
     @GetMapping("/{id}")
     @Operation(summary = "日志详情", description = "根据ID查询单条操作日志")
-    @PreAuthorize("hasAuthority('sys:log:query')")
+    @PreAuthorize("@ss.hasAuthority('system:log:list')")
     public Result<SysOperationLogEntity> getById(
             @Parameter(description = "日志ID") @PathVariable Long id) {
         // 日志查询一般不需要，暂不实现

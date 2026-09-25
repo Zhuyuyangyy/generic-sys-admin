@@ -113,9 +113,12 @@ class SmokeTest {
     @Test
     @DisplayName("All controller beans are present in context")
     void controllerBeansPresent() {
-        String[] beanNames = applicationContext.getBeanNamesForType(
-            org.springframework.web.bind.annotation.RestController.class,
-            true, false
+        // getBeanNamesForType(..., allowEagerInit=false) only inspects already-initialised
+        // singletons; controllers are lazy-created at request time, so it returns an empty
+        // array on Spring Framework 6.x. Query by name instead - the bean definition is
+        // registered at scan time regardless of instantiation order.
+        String[] beanNames = applicationContext.getBeanNamesForAnnotation(
+            org.springframework.web.bind.annotation.RestController.class
         );
         assertTrue(beanNames.length > 0, "At least one controller bean should exist");
     }

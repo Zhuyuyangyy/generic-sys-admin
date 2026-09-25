@@ -23,6 +23,8 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
+frontend/src/components.d.ts
+
 # Environment files (do NOT commit real configs)
 .env
 .env.local
@@ -39,7 +41,39 @@ docker-compose.override.yml
 mempalace.yaml
 entities.json
 
-docs/
+# Personal / one-off dev scripts (not project code)
+fix_*.py
+check_*.py
+debug*.py
+analyze_*.py
+view_fc.py
+read_file.py
+rebuild_ai.py
+recover_fc.py
+convert_encoding.py
+create_log_table.py
+git_to_gbk.py
+batch_fix_bom.py
+dashboard.py
+main.py
+test_login.py
+ai_line_check.py
+requirements.txt
+start.sh
+
+# Graduation thesis / paper artifacts
+*.docx
+*.ppt
+*.pptx
+doc/
+docx_render_optimized/
+figure1_architecture.png
+situation.md
+SCI_*.md
+INNOVATION_OPTIMIZATION.md
+专利*.md
+ai_毕设优化包/
+答辩资料/
 
 __pycache__/
 *.pyc

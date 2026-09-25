@@ -132,26 +132,32 @@ public class ConsumableServiceImpl implements ConsumableService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void adjustStock(Long id, Integer delta, String referenceNo, String remarks, Long operatorId) {
+        if (delta == null || delta == 0) {
+            throw new BusinessException("Stock delta must be non-zero");
+        }
         ConsumableEntity entity = consumableMapper.selectById(id);
         if (entity == null) {
             throw new BusinessException("Consumable not found: " + id);
         }
 
-        int newStock = entity.getStockQuantity() + delta;
-        if (newStock < 0) {
-            throw new BusinessException("Insufficient stock. Current: " + entity.getStockQuantity() + ", Requested: " + Math.abs(delta));
+        // 原子自增：UPDATE ... SET stock = stock + delta。
+        // 不用 selectById 出来的值算好再 updateById，否则并发下会 lost update
+        // （两个请求读到同一 stock，后写的把前一个覆盖掉）。
+        // stock >= 0 由 UPDATE 的 WHERE 保证，并发出库也不可能扣成负数。
+        int updated = consumableMapper.adjustStockAtomic(id, delta);
+        if (updated == 0) {
+            throw new BusinessException("Insufficient stock. Current: "
+                    + entity.getStockQuantity() + ", Requested: " + Math.abs(delta));
         }
 
-        // Update stock
-        entity.setStockQuantity(newStock);
-        consumableMapper.updateById(entity);
+        int newStock = entity.getStockQuantity() + delta;
 
-        // Record transaction
         recordTransaction(id, "ADJUSTMENT", delta, newStock, referenceNo, remarks, operatorId);
 
         log.info("Consumable stock adjusted - id={}, delta={}, newStock={}, operatorId={}",
                 id, delta, newStock, operatorId);
 
+        entity.setStockQuantity(newStock);
         checkStockAlerts(entity);
     }
 

@@ -1,447 +1,371 @@
-# Generic Sys Admin -- Enterprise Resource Management System (ERMS)
+# Generic Sys Admin — ERMS
 
-> An enterprise-grade platform for equipment lifecycle management, consumable inventory control, RBAC-based access control, natural-language business flow orchestration, and full-chain audit logging. Built with Spring Boot 3.4 + Vue 3.
+> Enterprise resource management with a **guarded natural-language execution
+> path**: intent parsing → command whitelist → permission check → typed
+> executor → audit. Spring Boot 3.4 + Vue 3.
 
 ---
 
 ## Overview
 
-Generic Sys Admin is a full-stack enterprise resource management system designed to digitize physical asset management for organizations. It provides unified equipment ledger management, consumable inventory workflows, role-based access control, real-time status monitoring via WebSocket, and a natural-language interface that allows non-technical users to operate the system through plain-language commands.
+A full-stack enterprise resource management system covering equipment
+lifecycle, consumable inventory, inspection records, and RBAC access control.
 
-The system follows the NIST RBAC standard, implements AOP-based operation logging for complete audit trails, and integrates optional AI services (TTS, image generation, video generation) via the MiniMax API.
+The natural-language interface is deliberately **not** a free-form "AI agent":
+user text is parsed into an intent, resolved against a fixed command table,
+checked against the caller's granted authorities, and only then executed.
+Everything that path can do is enumerated in one place
+(`NLExecutor.ALLOWED`), and every write operation is recorded with the
+authenticated operator — not a placeholder.
 
----
+### What this project is (and is not)
 
-## Key Features
-
-| Feature | Description |
-|---------|-------------|
-| **RBAC Permission Model** | NIST-standard Role-Based Access Control with user-role-menu three-layer association |
-| **NL Business Flow Engine** | Natural language command parsing with intent recognition, entity extraction, and rule-based execution |
-| **Real-Time Monitoring** | WebSocket push for equipment status changes, consumable stock alerts, and operation logs |
-| **Full-Chain Audit** | AOP aspect automatically records all critical operations with user, module, parameters, IP, and duration |
-| **Equipment Lifecycle** | Complete tracking from procurement through maintenance to disposal |
-| **Consumable Inventory** | Inbound, outbound, adjustment, and return workflows with min/max stock thresholds and batch management |
-| **AI Service Integration** | Built-in MiniMax multi-modal AI: TTS, image generation, and video generation |
-| **Spring Boot 3.4** | Latest Spring Boot 3.4 + Spring Security 6.x + MyBatis-Plus 3.5 |
+| | |
+|---|---|
+| **Is** | A resource-management backend with a guarded NL orchestration layer |
+| **Is** | A reference for "NL in → whitelisted, permission-checked command out" |
+| **Is not** | An autonomous agent — it cannot issue commands outside the whitelist |
+| **Is not** | A multi-tenant SaaS platform (no `tenant_id` isolation) |
+| **Is not** | A forecasting engine (no predictive restock module) |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Client Layer                                  │
-│   Vue 3 + TypeScript + Element Plus + Axios + Pinia + WebSocket     │
-└────────────────────────────────┬────────────────────────────────────┘
-                                 │ HTTP/REST (JSON) + WebSocket
-┌────────────────────────────────▼────────────────────────────────────┐
-│                     API Layer (Spring Boot 3.4)                      │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
-│  │Equipment │ │Consumable│ │   User   │ │   Role   │ │    NL    │  │
-│  │Controller│ │Controller│ │Controller│ │Controller│ │ Service  │  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
-│       └─────────────┴────────────┴────────────┴────────────┘        │
-│                              │                                      │
-│  ┌───────────────────────────▼────────────────────────────────────┐ │
-│  │                    Service Layer                                │ │
-│  │  EquipmentService  ConsumableService  NLService  AIService     │ │
-│  └───────────────────────────┬────────────────────────────────────┘ │
-│                              │                                      │
-│  ┌───────────────────────────▼────────────────────────────────────┐ │
-│  │  Security (JWT + Spring Security)  │  AOP (Operation Logging)  │ │
-│  └───────────────────────────┬────────────────────────────────────┘ │
-│                              │                                      │
-│  ┌───────────────────────────▼────────────────────────────────────┐ │
-│  │                 MyBatis-Plus ORM                                │ │
-│  └───────────────────────────┬────────────────────────────────────┘ │
-└──────────────────────────────┼──────────────────────────────────────┘
-                               │ JDBC
-┌──────────────────────────────▼──────────────────────────────────────┐
-│                          Data Layer                                  │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────────┐ │
-│  │   MySQL 8.0     │  │  Redis (opt.)   │  │    WebSocket         │ │
-│  │   Primary Store │  │  Cache/Session  │  │    Real-time Push    │ │
-│  └─────────────────┘  └─────────────────┘  └──────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
+Vue 3 + TypeScript (Element Plus, Pinia, Axios)
+        │  REST (JSON) + WebSocket
+        ▼
+Spring Boot 3.4  ·  Spring Security 6  ·  MyBatis-Plus 3.5
+        │
+        ├── JwtAuthFilter ──► SecurityContext (LoginUser + roles + permissions)
+        │        │
+        │        └── SecurityUtils.currentUserId()   ← every operator id
+        │
+        ├── URL rules  (WebSecurityConfig)   ← method-scoped public endpoints
+        ├── Method rules (@PreAuthorize/@ss) ← per-endpoint authorities
+        │
+        ├── NL path
+        │      HybridNLParser → NLRuleEngine → NLExecutor (whitelist)
+        │                                       → Equipment/Consumable/Inventory service
+        │
+        ├── CausalDAGService → impact propagation for DELETE/UPDATE
+        ├── OperationLogAspect → full-chain audit (user, params, IP, duration)
+        └── MinioUtil → MinIO, falling back to local filesystem
+                     ▼
+              MySQL 8 · Redis · MinIO
 ```
 
 ---
 
 ## Tech Stack
 
-### Backend
-
-| Category | Technology | Version |
-|----------|-----------|---------|
-| Runtime | Java | 17+ (LTS) |
-| Core Framework | Spring Boot | 3.4.x |
-| Security | Spring Security | 6.x |
-| Authentication | JWT (jjwt) | 0.12.x |
-| ORM | MyBatis-Plus | 3.5.x |
-| Database | MySQL | 8.0+ |
-| Cache | Redis | 7.x (optional, graceful degradation) |
-| WebSocket | Spring WebSocket | 6.x |
-| NL Engine | Custom rule-based parser | 1.0 |
-| API Docs | Knife4j / Swagger | 4.x |
-| Utilities | Hutool, Lombok | 5.x, 1.18.x |
-| Build | Maven | 3.8+ |
-
-### Frontend
-
-| Category | Technology | Version |
-|----------|-----------|---------|
-| Framework | Vue | 3.x |
-| Type System | TypeScript | 5.x |
-| UI Library | Element Plus | 2.x |
-| Build Tool | Vite | 5.x |
-| State Management | Pinia | 2.x |
-| HTTP Client | Axios | 1.x |
-| Router | Vue Router | 4.x |
+| Layer | Choice |
+|---|---|
+| Backend | Java 17, Spring Boot 3.4.0, Spring Security 6.4 |
+| Persistence | MyBatis-Plus 3.5.5, MySQL 8, HikariCP |
+| Auth | JJWT 0.12.3 (access + refresh), BCrypt |
+| Cache / session | Redis (Lettuce) |
+| Docs | springdoc-openapi + Knife4j |
+| Frontend | Vue 3, TypeScript, Vite, Element Plus, Pinia, ECharts |
+| Build / CI | Maven, GitHub Actions (`ci.yml`) |
 
 ---
 
 ## Quick Start
 
-### Option 1: Docker Deployment (Recommended)
+### Prerequisites
+
+- JDK 17 (see "Build note" below — Lombok requires ≥ 1.18.42 on JDK 21+)
+- Maven 3.9+, Node 20+, MySQL 8, Redis
+
+### 1. Configure
 
 ```bash
-git clone <repository-url>
-cd generic-sys-admin
-
-# Start all services (MySQL + Backend + Frontend)
-docker-compose up -d
-
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs -f backend
+cp .env.example .env
+# set DB_PASSWORD, JWT_SECRET (>= 32 chars), REDIS_PASSWORD
 ```
 
-Startup order: MySQL (5s) -> Backend (15s) -> Frontend. Full startup takes approximately 30 seconds.
+### 2. Database
 
-### Option 2: Manual Deployment
-
-#### Prerequisites
-
-| Dependency | Version |
-|-----------|---------|
-| JDK | 17+ |
-| Maven | 3.8+ |
-| Node.js | 18+ |
-| MySQL | 8.0+ |
-| Redis | 7.x (optional) |
-
-#### Step 1: Initialize Database
+The application runs **Flyway** on startup. Create an empty database and let
+Flyway apply the chain from `classpath:db/migration`:
 
 ```bash
-mysql -u root -p < sql/v1.0__init.sql
-mysql -u root -p < sql/v1.1__operation_log.sql
+mysql -u root -p -e "CREATE DATABASE generic_sys_admin \
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+cd backend && mvn spring-boot:run        # Flyway migrates automatically
 ```
 
-#### Step 2: Configure Backend
-
-Edit `backend/src/main/resources/application-dev.yml`:
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/generic_sys_admin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
-    username: root
-    password: your_password_here
-
-jwt:
-  secret: your-256-bit-secret-key-change-in-production
-  expiration: 86400000
-```
-
-#### Step 3: Build and Run Backend
+To apply the migrations by hand instead, read the same files Flyway uses:
 
 ```bash
-cd backend
-mvn clean package -DskipTests
-java -jar target/generic-sys-admin-1.0.0.jar --spring.profiles.active=dev
+mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/v1.0__init.sql
+mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/v1.1__operation_log.sql
+mysql -u root -p generic_sys_admin < backend/src/main/resources/db/migration/v1.2__rbac_schema_completion.sql
 ```
 
-#### Step 4: Build and Run Frontend
+The migration scripts deliberately contain **no** `CREATE DATABASE` / `USE` —
+those redirect every table into a hardcoded database instead of the one you
+pass. Creating the database is the caller's job.
+
+`v1.2` adds the `permission` / `menu_type` / `is_external` columns to `sys_menu`
+and seeds the button-level permissions that `@PreAuthorize` checks. **Skip it
+and every admin request returns 403** — `SysMenuEntity` maps those columns and
+`SysMenuMapper` uses `SELECT m.*`.
+
+Migrations live at the Flyway standard location,
+`backend/src/main/resources/db/migration/`, and are the only tracked copy —
+there is no build-time copy step to drift.
+
+The chain is verified automatically by `MigrationIT` against a real MySQL 8.0.44
+container; see `docs/database/migration-audit.md`.
+
+The chain has been executed end-to-end against MySQL 8.0.44; see
+`docs/database/migration-audit.md` for the recorded output.
+
+### 3. Run
 
 ```bash
-cd frontend
-npm install
-npm run dev
+# backend
+cd backend && mvn spring-boot:run
+
+# frontend
+cd frontend && npm install && npm run dev
 ```
 
-#### Default Accounts
+Swagger UI: <http://localhost:8081/swagger-ui.html>
 
-| Username | Password | Role |
-|----------|----------|------|
-| `admin` | `123456` | System Administrator (full access) |
-| `operator` | `123456` | Operator (equipment/consumable management) |
-| `viewer` | `123456` | Viewer (read-only) |
+### Build note (JDK 21+)
 
-> **Change default passwords immediately in production environments.**
+Lombok's annotation processor is silently skipped on JDK 21+, which makes every
+`@Data` / `@Slf4j` / `@Builder` accessor vanish and the build fail with
+"cannot find symbol". The fix is already in `backend/pom.xml`: a Lombok version
+of ≥ 1.18.42 **and** an explicit `annotationProcessorPaths` entry. If you bump
+`lombok.version`, keep the dependency referencing `${lombok.version}` — a
+hardcoded version silently overrides the property.
 
 ---
 
-## NL Natural Language Business Flow
-
-The NL engine allows users to operate the system through natural language commands, eliminating the need to navigate menus.
-
-### How It Works
+## Natural Language Execution Path
 
 ```
-User: "查询设备编号为 EQ-2024-001 的维护记录"
-         │
-         ▼
-   NL Parser ── Tokenization, entity recognition, intent classification
-         │
-         ▼
-   Rule Engine ── Match business rule templates, generate execution plan
-         │
-         ▼
-   Executor ── Call corresponding Service method
-         │
-         ▼
-   Return structured result to user
+"删除设备 EQ-2024-0001"
+        │
+        ▼  HybridNLParser (rule engine, LLM fallback when a key is set)
+   intent = DELETE, entityType = EQUIPMENT
+        │
+        ▼  NLRuleEngine.resolveService()
+   "deleteEquipment"
+        │
+        ▼  NLExecutor.describe() ─── not in whitelist? ──► refuse, nothing runs
+        │                         permission = equipment:del
+        ▼
+   EquipmentService.delete(id, operatorId)   ← operatorId from SecurityUtils
+        │
+        ▼  OperationLogAspect
+   audit record (who, what, params, IP, duration)
 ```
 
-### Supported Commands
+`NLExecutor` holds the single authoritative table. It resolves commands by
+**exact name** against that table (no `startsWith` matching, no reflection on
+caller-supplied names), and parses entity ids as strictly
+`<PREFIX>-<digits>` — a malformed id is rejected rather than forwarded.
 
-| Command Example | Intent | Parameters |
-|----------------|--------|------------|
-| "查询设备 EQ-2024-001" | Query device | `deviceCode` |
-| "列出所有维护中的设备" | List devices | `status=0` |
-| "给设备 EQ-2024-001 做巡检" | Create inspection | `deviceCode`, `inspectionType` |
-| "入库耗材键盘 50个" | Consumable inbound | `productName`, `quantity` |
-| "查询我的操作日志" | Query logs | `currentUser` |
-| "给用户张三分配管理员角色" | Assign role | `username`, `roleName` |
+For `DELETE` / `UPDATE`, `CausalDAGService` first propagates impact through the
+dependency DAG so the caller sees the blast radius before the write lands.
 
 ---
 
-## RBAC Permission Model
+## RBAC Model
 
-Four-layer permission model aligned with NIST RBAC:
+`user → user_role → role → role_menu → menu(permission)`.
 
-```
-Permission (Menu + CRUD)  ◄──N:M──►  Role  ◄──N:M──►  User
-```
+Authorization is enforced in two layers:
 
-| Role Code | Role Name | Access Level |
-|-----------|-----------|-------------|
-| `ROLE_ADMIN` | System Administrator | Full system access |
-| `ROLE_EQUIPMENT_ADMIN` | Equipment Manager | Equipment lifecycle management |
-| `ROLE_CONSUMABLE_ADMIN` | Consumable Manager | Inventory management |
-| `ROLE_OPERATOR` | Operator | Inspection and requisition |
-| `ROLE_VIEWER` | Viewer | Read-only access |
+1. **URL layer** (`WebSecurityConfig`) — only `POST /api/users/login`,
+   `POST /api/users/refresh-token`, the Swagger paths, and
+   `/actuator/health|info` are public. Everything else requires authentication.
+2. **Method layer** (`@PreAuthorize("@ss.hasAuthority('...'))`) — per-endpoint
+   authorities, e.g. `system:user:del` for user deletion.
 
-Permission enforcement:
+`@PreAuthorize` is deliberately spelled `@ss.hasAuthority(...)` rather than
+`hasAuthority(...)`: `SecurityChecker` reads directly from the
+`SecurityContext`, which sidesteps the SpEL principal-field restrictions in
+Spring Security 6.
 
-- **Backend**: `@PreAuthorize` annotations with Spring Security method-level security
-- **Frontend**: Route guards with dynamic menu rendering based on user roles
+Note on `application.yml`: `management.endpoints.web.exposure.include` is
+`health,info`. Other actuator endpoints are not exposed at all.
 
 ---
 
 ## Functional Modules
 
-| Module | Key Capabilities |
-|--------|-----------------|
-| **User Management** | CRUD, password reset, account locking (5 failed attempts), role assignment |
-| **Role Management** | Role CRUD, menu permission assignment, multi-role per user |
-| **Equipment Management** | Equipment ledger, status lifecycle (Normal/Maintenance/Scrapped), maintenance scheduling, inspection records |
-| **Consumable Management** | Inventory ledger, inbound/outbound/adjustment/return transactions, min/max stock alerts, batch and expiration management |
-| **Operation Log** | AOP-based automatic logging of all critical operations with full request/response details |
-| **NL Interface** | Natural language command parsing and execution |
-| **AI Services** | MiniMax TTS, image generation, video generation (optional) |
-| **Dashboard** | Real-time WebSocket monitoring of equipment status and consumable alerts |
+| Module | Path | Highlights |
+|---|---|---|
+| Equipment | `/api/equipment` | Lifecycle, status state machine, maintenance scheduling |
+| Consumables | `/api/consumables` | Inbound / outbound / stock adjustment, transactions |
+| Inspection records | `/api/inventory-records` | Maintenance history per equipment |
+| Users | `/api/users` | Login, refresh, profile, lock/unlock, soft delete |
+| Roles / menus | `/api/roles`, `/api/menus` | Role-menu grant tree |
+| NL orchestration | `/api/nl` | `execute`, `execute-with-causal-check`, `causal/dag` |
+| Operation logs | `/api/logs` | AOP-driven audit trail |
+| Dashboard / AI / voice | `/api/dashboard`, `/api/ai`, `/api/tts` | Stats, MiniMax multimodal, TTS |
 
 ---
+
+## Security Notes
+
+Implemented and regression-tested:
+
+- **Operator identity** always comes from `SecurityUtils.currentUserId()`,
+  which reads `SecurityContext` and throws when there is no authenticated
+  principal. No endpoint falls back to a hardcoded user id.
+- **Method-scoped public rules** — the `/api/users` resource as a whole is not
+  anonymous; only the two auth endpoints are.
+- **Per-endpoint authorities** on every write endpoint across 11 controllers;
+  `AuthoritySeedConsistencyTest` fails the build if any of them is missing from
+  the SQL seed or `PermConst`.
+- **Per-command authorities inside the NL path** — `nl:execute` alone does not
+  let a caller delete equipment; each of the 16 registered commands enforces the
+  permission it declares.
+- **Command whitelist** for the NL path, plus strict entity-id parsing.
+- **Fail-fast secrets** — `JWT_SECRET` has no default outside the dev profile,
+  and known placeholder values are rejected at startup.
+- **Actuator** limited to `health,info`.
+- **Gitleaks** in CI with full-history checkout.
+
+Not implemented (stated plainly):
+
+- **Multi-tenancy** — no `tenant_id` column, no tenant isolation.
+- **ABAC / data-scope filtering** — authorization is purely RBAC.
+- **Idempotency keys** on write endpoints.
+- **NL-path audit detail** — `POST /api/nl/execute` is logged, but the parsed
+  intent, resolved command, and target ID are not captured.
+- **Rate limiting / brute-force lockout** beyond the login attempt counter.
+- **Parameter validation runs before authorization.** `@PreAuthorize` is method
+  security, so it executes *after* argument binding — an unauthenticated caller
+  gets a 400 with field names before the 403. Not a data leak, but it means the
+  authorization gate is not the first thing a request meets.
+
+## Audit documents
+
+| Document | Contents |
+|---|---|
+| `docs/audit/current-baseline.md` | Measured file counts, test baseline, module structure, CI, migration chain |
+| `docs/audit/write-side-effects.md` | Every state-changing operation and whether a duplicate is dangerous |
+| `docs/security/permission-matrix.md` | Every endpoint × HTTP method × required authority |
+| `docs/security/nl-command-surface.md` | The commands the NL path can trigger, and what it cannot reach |
+| `docs/database/migration-audit.md` | Migration chain, static schema checks, runtime status |
+| `docs/database/migration-policy.md` | How to add a migration; why V1.2 must not be edited in place |
+
+---
+
+## Testing
+
+```bash
+cd backend && mvn verify        # unit tests + failsafe IT (Testcontainers)
+pytest tests/ -q                # repo layout + security regressions
+```
+
+`mvn test` runs the fast unit suite only (H2, no Docker). `mvn verify` adds the
+integration phase, including `MigrationIT` against a real MySQL container —
+it skips itself when no Docker daemon is reachable.
+
+Backend highlights (`backend/src/test/java`):
+
+| Class | Covers |
+|---|---|
+| `SecurityRuntimeAuthorizationTest` | MockMvc → filter chain → method security: anonymous 401 / wrong authority 403 / correct 200, across user, role, inventory and NL endpoints |
+| `SecurityUtilsTest` | Current-user resolution; no fallback id; rejects non-`LoginUser` principals |
+| `AuthoritySeedConsistencyTest` | Every `@ss.hasAuthority('…')` exists in the SQL seed and in `PermConst`; blocks a whole class of 403 bugs |
+| `JwtUtilTest` | Token signing / parsing / validation; fail-fast on missing or placeholder secrets |
+| `NLExecutorTest` | Whitelist enforcement, malformed entity ids, per-command authorization, and **proof that a refused command never touches a service** |
+| `ConsumableStockInvariantTest` | Stock ≥ 0, positive quantities, and no lost update under concurrent inbounds |
+| `MigrationIT` | Flyway discovers/migrates/validates V1.0–V1.2 on real MySQL; schema + permission seed asserted |
+| `SmokeTest` | Application context + core bean wiring |
+| `service.*` | Consumable and user service behaviour |
+| `experiment.*` | NL accuracy, causal propagation, end-to-end, ablation |
+
+`Experiment4LLMBaselineTest` requires `DEEPSEEK_API_KEY` and is skipped when it
+is unset.
+
+## Inventory invariants
+
+`ConsumableMapper.adjustStockAtomic()` performs
+`UPDATE sys_consumable SET stock_quantity = stock_quantity + #{delta}
+WHERE … AND stock_quantity + #{delta} >= 0`, so:
+
+- stock can never go negative, **even under concurrency**;
+- two concurrent inbounds both land (no lost update — this used to fail and
+  `ConsumableStockInvariantTest` now guards it);
+- the stock update and the transaction ledger insert share one `@Transactional`.
 
 ## Project Structure
 
 ```
 generic-sys-admin/
 ├── backend/
+│   ├── Dockerfile
 │   ├── src/main/java/com/zyy/
-│   │   ├── GenericSysAdminApplication.java    # Application entry
-│   │   ├── controller/                        # REST controllers
-│   │   │   ├── SysUserController.java
-│   │   │   ├── RoleController.java
-│   │   │   ├── MenuController.java
-│   │   │   ├── EquipmentController.java
-│   │   │   ├── ConsumableController.java
-│   │   │   ├── InventoryRecordController.java
-│   │   │   ├── OperationLogController.java
-│   │   │   ├── AIController.java
-│   │   │   ├── DashboardController.java
-│   │   │   └── FileController.java
-│   │   ├── service/                           # Business logic
-│   │   │   └── impl/
-│   │   ├── mapper/                            # MyBatis-Plus mappers
-│   │   ├── model/
-│   │   │   ├── entity/                        # Database entities
-│   │   │   ├── dto/                           # Request DTOs
-│   │   │   └── vo/                            # Response VOs
-│   │   ├── rbac/                              # RBAC core module
-│   │   ├── security/                          # JWT + Spring Security
-│   │   ├── nl/                                # NL parsing engine
-│   │   │   ├── parser/
-│   │   │   ├── rules/
-│   │   │   └── executor/
-│   │   ├── aspect/                            # AOP logging
-│   │   ├── websocket/                         # WebSocket config
-│   │   ├── config/                            # Application config
-│   │   ├── exception/                         # Global exception handling
-│   │   ├── enums/
-│   │   └── util/
-│   └── src/main/resources/
-│       ├── application.yml
-│       ├── application-dev.yml
-│       └── nl-rules/                          # NL rule definitions
+│   │   ├── config/        Security, MyBatis-Plus, MinIO, storage strategy
+│   │   ├── controller/    REST endpoints (11 controllers)
+│   │   ├── nl/            NLParser, HybridNLParser, LLMNLParser, NLRuleEngine,
+│   │   │                  NLExecutor (whitelist), CausalDAGService, NLService
+│   │   ├── security/      JwtAuthFilter, JwtUtil, LoginUser, SecurityUtils,
+│   │   │                  SecurityErrorHandlers
+│   │   ├── service/       + impl/
+│   │   └── mapper/ model/ aspect/ exception/ voice/ websocket/
+│   ├── src/main/resources/  application*.yml, logback
+│   ├── src/main/resources/
+│   │   ├── application*.yml, logback
+│   │   └── db/migration/
+│   │       ├── v1.0__init.sql            ← Flyway migrations (tracked, single copy)
+│   │       ├── v1.1__operation_log.sql
+│   │       └── v1.2__rbac_schema_completion.sql
+│   └── src/test/java/com/zyy/
+│       ├── database/MigrationIT.java            ← Testcontainers + Flyway
+│       ├── nl/ security/ service/
+│       └── SmokeTest, IntegrationTest, experiment/
 ├── frontend/
-│   └── src/
-│       ├── api/                               # API client
-│       ├── views/
-│       │   ├── dashboard/
-│       │   ├── system/                        # User/Role/Menu/Log
-│       │   ├── equipment/
-│       │   ├── consumable/
-│       │   ├── inventory/
-│       │   └── ai-studio/                     # AI services UI
-│       ├── router/
-│       ├── stores/
-│       ├── utils/
-│       └── websocket/
-├── sql/
-│   ├── v1.0__init.sql                         # Full schema + seed data
-│   └── v1.1__operation_log.sql                # Operation log table
-├── docker-compose.yml
-├── start.sh
+├── tests/test_smoke.py    repo layout + security regression guards
 ├── docs/
-│   ├── 技术交底书.md
-│   ├── SCI_Paper_Skeleton.md
-│   └── Claim_Evidence_Table.md
-├── tests/
-│   └── test_smoke.py
-└── REPRODUCE.md
+│   ├── audit/             current-baseline, write-side-effects
+│   ├── database/          migration-audit, migration-policy
+│   └── security/          permission-matrix, nl-command-surface
+└── .github/workflows/ci.yml
 ```
 
----
+## CI
 
-## Security
+`ci.yml` runs, on every push and pull request:
 
-| Mechanism | Implementation |
-|-----------|---------------|
-| Password Storage | BCrypt (cost factor = 10), never stored in plaintext |
-| Authentication | JWT tokens with 24-hour expiry |
-| Account Protection | Auto-lock after 5 failed login attempts (30-minute cooldown) |
-| SQL Injection | MyBatis-Plus parameterized queries |
-| XSS Prevention | Input filtering + Element Plus built-in XSS protection |
-| Interface Security | `@PreAuthorize` annotation-based access control |
-| Data Masking | Sensitive fields (passwords) cleared before API response |
-| CORS | Configurable allowed origins (restrict in production) |
+| Job | What it does |
+|---|---|
+| `secret-scan` | Gitleaks with `fetch-depth: 0` (full history) |
+| `python-lint` | `ruff check .` |
+| `python-test` | `pytest tests/ -x -v` |
+| `backend-build` | `mvn clean compile` → `mvn verify` (unit + failsafe IT incl. Testcontainers MySQL) → `mvn package` |
+| `frontend-build` | `npm ci`, `vue-tsc --noEmit`, `npm run build` |
+| `docker-build` | builds both images after backend + frontend pass |
 
----
+No job ends in `|| true` or `|| echo`, and no job selects a subset of tests.
+CI has a Docker daemon, so `MigrationIT` actually runs there — the backend log
+shows the MySQL container start, the migrations Flyway applied, and the
+integration-test results. Locally without Docker it skips.
 
-## API Documentation
+## Configuration and fail-fast
 
-After starting the backend, access the interactive API documentation at:
-
-```
-http://localhost:8080/doc.html    (Knife4j UI)
-```
-
-### Key Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/auth/login` | POST | User authentication, returns JWT |
-| `/api/users` | GET/POST/PUT/DELETE | User management |
-| `/api/roles` | GET/POST/PUT/DELETE | Role management |
-| `/api/equipment` | GET/POST/PUT/DELETE | Equipment management |
-| `/api/consumables` | GET/POST/PUT/DELETE | Consumable management |
-| `/api/consumables/{id}/inbound` | POST | Consumable inbound |
-| `/api/consumables/{id}/outbound` | POST | Consumable outbound |
-| `/api/nl/execute` | POST | Execute NL command |
-| `/api/logs` | GET | Operation log query |
-| `/api/ai/tts` | POST | Text-to-speech |
-| `/api/ai/image` | POST | Image generation |
-| `/api/ai/video/generate` | POST | Video generation |
-| `/ws/monitor` | WebSocket | Real-time status monitoring |
-
----
-
-## Database Design
-
-The system uses 9 core tables:
-
-| Table | Description |
-|-------|-------------|
-| `sys_user` | User accounts with BCrypt passwords and lockout tracking |
-| `sys_role` | Role definitions (Admin, Equipment Admin, Operator, Viewer) |
-| `sys_menu` | Menu tree with permission identifiers |
-| `sys_user_role` | User-role many-to-many association |
-| `sys_role_menu` | Role-menu many-to-many association |
-| `sys_equipment` | Equipment ledger with lifecycle status |
-| `sys_consumable` | Consumable inventory with stock thresholds |
-| `sys_inventory_transaction` | Consumable inbound/outbound/adjustment records |
-| `sys_operation_log` | Full audit trail for all operations |
-| `sys_nl_command_log` | NL command execution history |
-
----
-
-## Limitations and Honest Disclaimers
-
-This project is a **research prototype / course graduation project**, not a production system. The following disclaimers clarify known limitations that readers should be aware of:
-
-### Self-Review Score
-
-> An earlier self-evaluation assigned a score of **7.50/10**. An independent re-evaluation found the actual score to be approximately **5.79/10**. The discrepancy arises from over-claiming novelty on features that are standard implementations (RBAC, AOP logging, WebSocket) and from conflating "code exists" with "code is rigorously validated." We acknowledge this gap and do not stand behind the 7.50 figure.
-
-### NL Engine: Rule-Based Keyword Matching, Not a True NLU System
-
-The natural language interface uses a **rule-based keyword parser** (regex + template matching), not a trained NLU/NLP model. It supports a fixed set of command templates and will fail silently or produce incorrect results on out-of-vocabulary inputs. The "NL" label is aspirational; the implementation is closer to a structured command parser with Chinese keyword aliases.
-
-### Causal Graph: Hardcoded 7-Edge DAG, Not Dynamically Learned
-
-The causal impact system uses a **statically defined 7-edge DAG** over 4 system module nodes (`EQUIPMENT_MGMT`, `CONSUMABLE_MGMT`, `OPERATION_LOG`, `CONSUMABLE_ALERT`). The graph is hand-coded in `CausalDAGService.buildSystemDAG()` and does not learn from data. The claim of "dynamic causal graph construction" in patent or paper documents should be understood as "the code structure supports dynamic edges," not that the system actually infers causal relationships from observed data. BFS traversal over a 4-node graph is trivial and does not constitute meaningful causal inference.
-
-### Test Suite: ~15 Smoke Tests, Not 500
-
-The `tests/test_smoke.py` file contains approximately **15 smoke tests** that verify directory structure and file existence (e.g., "does `backend/` exist?", "does `README.md` have content?"). These are tautological structural checks, not functional tests of business logic. Claims of "500+ test cases" refer to the theoretical parameterized coverage space of the NL keyword parser, not to distinct test methods that actually exercise behavior.
-
-### Frontend NL Page
-
-A frontend NL input page has been added at `/nl` route. It includes a visible disclaimer banner and demonstrates the NL command execution and causal check APIs. It is a UI prototype for concept demonstration only.
-
----
-
-## References
-
-### Causal DAGs and Causal Inference
-
-1. Pearl, J. (2009). *Causality: Models, Reasoning, and Inference* (2nd ed.). Cambridge University Press. -- The foundational text on causal directed acyclic graphs (DAGs) and do-calculus.
-2. Spirtes, P., Glymour, C., & Scheines, R. (2000). *Causation, Prediction, and Search* (2nd ed.). MIT Press. -- Algorithms for causal structure learning from observational data.
-3. Peters, J., Janzing, D., & Scholkopf, B. (2017). *Elements of Causal Inference: Foundations and Learning Algorithms*. MIT Press. -- Modern treatment of causal inference with machine learning.
-
-### Natural Language Interfaces to Databases
-
-4. Li, F., & Jagadish, H. V. (2014). Constructing an Interactive Natural Language Interface for Relational Databases. *Proceedings of the VLDB Endowment*, 8(1), 73-84. -- NLIDB system design using semantic parsing.
-5. Yaghmazadeh, N., Wang, Y., Dillig, I., & Dillig, T. (2017). SQLizer: Query Synthesis from Natural Language. *Proceedings of OOPSLA*, Article 63. -- Automatic SQL generation from natural language.
-6. Kamath, A., & Das, R. (2019). A Survey on Semantic Parsing. *arXiv:1812.00978*. -- Comprehensive survey of semantic parsing approaches for NL-to-formal-language translation.
-
-### RBAC and Access Control
-
-7. Ferraiolo, D. F., Sandhu, R., Gavrila, S., Kuhn, D. R., & Chandramouli, R. (2001). Proposed NIST Standard for Role-Based Access Control. *ACM Transactions on Information and System Security*, 4(3), 224-274. -- The NIST RBAC standard that this system implements.
+`application.yml` sets `sys.config.security.jwt-secret: ${JWT_SECRET:}` — **no
+default**. Only `application-dev.yml` supplies a dev placeholder. Starting with
+the `prod` profile without `JWT_SECRET` therefore fails at bean initialisation
+rather than silently signing tokens with a known key
+(`JwtUtil.afterPropertiesSet` also rejects a list of known placeholder values).
 
 ---
 
 ## License
 
-MIT -- free to use, modify, and distribute with attribution.
-
----
-
-## Contact
-
-For questions or issues, please open an issue on the repository.
+No license file has been added to this repository yet. Until one is, all rights
+are reserved by default — treat the code as read-only reference material.

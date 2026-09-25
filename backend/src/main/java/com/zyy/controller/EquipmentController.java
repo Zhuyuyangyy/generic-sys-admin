@@ -6,11 +6,12 @@ import com.zyy.model.dto.EquipmentSaveDTO;
 import com.zyy.model.dto.EquipmentUpdateDTO;
 import com.zyy.model.vo.EquipmentVO;
 import com.zyy.model.vo.PageVO;
+import com.zyy.security.SecurityUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.zyy.service.EquipmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,16 +40,17 @@ import org.springframework.web.bind.annotation.*;
 public class EquipmentController {
 
     private final EquipmentService equipmentService;
+    private final SecurityUtils securityUtils;
 
     /**
      * Register a new equipment asset.
      */
     @PostMapping
+    @PreAuthorize("@ss.hasAuthority('equipment:add')")
     @Operation(summary = "Register equipment", description = "Create a new equipment asset record")
     public Result<EquipmentVO> save(
-            @Valid @RequestBody EquipmentSaveDTO saveDTO,
-            HttpServletRequest request) {
-        Long operatorId = getCurrentUserId(request);
+            @Valid @RequestBody EquipmentSaveDTO saveDTO) {
+        Long operatorId = getCurrentUserId();
         EquipmentVO vo = equipmentService.save(saveDTO, operatorId);
         return Result.ok(vo, "Equipment registered successfully");
     }
@@ -57,12 +59,12 @@ public class EquipmentController {
      * Update an existing equipment record.
      */
     @PutMapping("/{id}")
+    @PreAuthorize("@ss.hasAuthority('equipment:edit')")
     @Operation(summary = "Update equipment", description = "Update equipment details (not for status changes)")
     public Result<EquipmentVO> update(
             @Parameter(description = "Equipment ID") @PathVariable Long id,
-            @Valid @RequestBody EquipmentUpdateDTO updateDTO,
-            HttpServletRequest request) {
-        Long operatorId = getCurrentUserId(request);
+            @Valid @RequestBody EquipmentUpdateDTO updateDTO) {
+        Long operatorId = getCurrentUserId();
         updateDTO.setId(id);
         EquipmentVO vo = equipmentService.update(updateDTO, operatorId);
         return Result.ok(vo, "Equipment updated successfully");
@@ -73,6 +75,7 @@ public class EquipmentController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "Get equipment by ID")
+    @PreAuthorize("@ss.hasAuthority('equipment:detail')")
     public Result<EquipmentVO> getById(
             @Parameter(description = "Equipment ID") @PathVariable Long id) {
         EquipmentVO vo = equipmentService.getById(id);
@@ -84,6 +87,7 @@ public class EquipmentController {
      */
     @GetMapping
     @Operation(summary = "List equipment", description = "Paginated equipment list with optional filters")
+    @PreAuthorize("@ss.hasAuthority('equipment:list')")
     public Result<PageVO<EquipmentVO>> getPage(
             @Valid PageParam pageParam,
             @Parameter(description = "Equipment name filter (partial match)") @RequestParam(required = false) String name,
@@ -97,14 +101,14 @@ public class EquipmentController {
     /**
      * Transition equipment status.
      * Validates state machine rules before applying the transition.
+    @PreAuthorize("@ss.hasAuthority('equipment:edit')")
      */
     @PatchMapping("/{id}/status")
     @Operation(summary = "Update equipment status", description = "Change operational status with state machine validation")
     public Result<Void> updateStatus(
             @Parameter(description = "Equipment ID") @PathVariable Long id,
-            @Parameter(description = "Target status: 0=maintenance, 1=normal, 2=scrapped") @RequestParam Integer status,
-            HttpServletRequest request) {
-        Long operatorId = getCurrentUserId(request);
+            @Parameter(description = "Target status: 0=maintenance, 1=normal, 2=scrapped") @RequestParam Integer status) {
+        Long operatorId = getCurrentUserId();
         equipmentService.updateStatus(id, status, operatorId);
         return Result.ok(null, "Equipment status updated");
     }
@@ -114,17 +118,15 @@ public class EquipmentController {
      */
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete equipment", description = "Soft delete an equipment record")
+    @PreAuthorize("@ss.hasAuthority('equipment:del')")
     public Result<Void> delete(
-            @Parameter(description = "Equipment ID") @PathVariable Long id,
-            HttpServletRequest request) {
-        Long operatorId = getCurrentUserId(request);
+            @Parameter(description = "Equipment ID") @PathVariable Long id) {
+        Long operatorId = getCurrentUserId();
         equipmentService.delete(id, operatorId);
         return Result.ok(null, "Equipment deleted");
     }
 
-    private Long getCurrentUserId(HttpServletRequest request) {
-        Object attr = request.getAttribute("userId");
-        if (attr instanceof Long) return (Long) attr;
-        return 1L; // Development default
+    private Long getCurrentUserId() {
+        return securityUtils.currentUserId();
     }
 }

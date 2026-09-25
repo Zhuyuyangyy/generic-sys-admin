@@ -49,15 +49,32 @@ public class MinioConfig {
 
     @Bean
     public MinioClient minioClient() {
-        log.info("[MinIO] Initializing MinIO client | Endpoint: {}", endpoint);
+        // Endpoint may be intentionally unreachable (tests / local dev without MinIO).
+        // MinioClient.builder() throws on a malformed or unroutable endpoint, which would
+        // abort the whole ApplicationContext. MinioUtil injects this bean with
+        // @Autowired(required = false) and degrades to LocalFileStorageStrategy, so
+        // returning null here is the intended "storage unavailable" signal.
+        if (endpoint == null || endpoint.isBlank()) {
+            log.warn("[MinIO] No endpoint configured - local storage fallback will be used");
+            availability.setAvailable(false, "No endpoint configured");
+            return null;
+        }
+        try {
+            log.info("[MinIO] Initializing MinIO client | Endpoint: {}", endpoint);
 
-        MinioClient client = MinioClient.builder()
-            .endpoint(endpoint)
-            .credentials(accessKey, secretKey)
-            .build();
+            MinioClient client = MinioClient.builder()
+                .endpoint(endpoint)
+                .credentials(accessKey, secretKey)
+                .build();
 
-        log.info("[MinIO] MinioClient bean created successfully");
-        return client;
+            log.info("[MinIO] MinioClient bean created successfully");
+            return client;
+        } catch (Exception e) {
+            log.warn("[MinIO] Invalid endpoint [{}] - falling back to local storage: {}",
+                    endpoint, e.getMessage());
+            availability.setAvailable(false, e.getMessage());
+            return null;
+        }
     }
 
     // ==================== Bucket Initialization ====================

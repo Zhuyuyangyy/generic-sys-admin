@@ -189,3 +189,19 @@ logging:
   pattern:
     # 控制台输出格式：时间 [线程] 级别 类名 - 消息
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# ==========================================================
+# 🔐 JWT：仅 dev profile 提供默认值
+# ==========================================================
+# application.yml 中 sys.config.security.jwt-secret 已改为无默认值 ${JWT_SECRET:}，
+# 只有这里为本地开发提供临时值。激活 prod profile 而未设置 JWT_SECRET 时应用
+# 启动失败 —— 这是有意的 fail-fast（JwtUtil.afterPropertiesSet）。
+sys:
+  config:
+    security:
+      jwt-secret: ${JWT_SECRET:dev-secret-do-not-use-in-production-32chars!}
+      jwt-expiration: 7200
+      jwt-refresh-expiration: 604800
+      bcrypt-cost-factor: 10
+      max-failed-attempts: 5
+      lockout-minutes: 30

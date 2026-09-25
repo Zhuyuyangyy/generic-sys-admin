@@ -6,14 +6,15 @@ import com.zyy.model.dto.ConsumableSaveDTO;
 import com.zyy.model.dto.ConsumableUpdateDTO;
 import com.zyy.model.vo.ConsumableVO;
 import com.zyy.model.vo.PageVO;
+import com.zyy.security.SecurityUtils;
 import com.zyy.service.ConsumableService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -29,28 +30,30 @@ import org.springframework.web.bind.annotation.*;
 public class ConsumableController {
 
     private final ConsumableService consumableService;
+    private final SecurityUtils securityUtils;
 
     @PostMapping
+    @PreAuthorize("@ss.hasAuthority('consumable:add')")
     @Operation(summary = "Register consumable", description = "Add a new consumable product to inventory")
     public Result<ConsumableVO> save(
-            @Valid @RequestBody ConsumableSaveDTO saveDTO,
-            HttpServletRequest request) {
-        ConsumableVO vo = consumableService.save(saveDTO, getCurrentUserId(request));
+            @Valid @RequestBody ConsumableSaveDTO saveDTO) {
+        ConsumableVO vo = consumableService.save(saveDTO, getCurrentUserId());
         return Result.ok(vo, "Consumable registered successfully");
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@ss.hasAuthority('consumable:edit')")
     @Operation(summary = "Update consumable")
     public Result<ConsumableVO> update(
             @PathVariable Long id,
-            @Valid @RequestBody ConsumableUpdateDTO updateDTO,
-            HttpServletRequest request) {
+            @Valid @RequestBody ConsumableUpdateDTO updateDTO) {
         updateDTO.setId(id);
-        ConsumableVO vo = consumableService.update(updateDTO, getCurrentUserId(request));
+        ConsumableVO vo = consumableService.update(updateDTO, getCurrentUserId());
         return Result.ok(vo, "Consumable updated successfully");
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@ss.hasAuthority('consumable:detail')")
     @Operation(summary = "Get consumable by ID")
     public Result<ConsumableVO> getById(
             @PathVariable Long id) {
@@ -58,6 +61,7 @@ public class ConsumableController {
     }
 
     @GetMapping
+    @PreAuthorize("@ss.hasAuthority('consumable:list')")
     @Operation(summary = "List consumables", description = "Paginated list with optional filters")
     public Result<PageVO<ConsumableVO>> getPage(
             @Valid PageParam pageParam,
@@ -69,53 +73,51 @@ public class ConsumableController {
     }
 
     @PostMapping("/{id}/inbound")
+    @PreAuthorize("@ss.hasAuthority('consumable:in')")
     @Operation(summary = "Stock inbound", description = "Record incoming stock (procurement, return)")
     public Result<Void> inbound(
             @PathVariable Long id,
             @Parameter(description = "Quantity to add") @RequestParam Integer quantity,
             @RequestParam(required = false) String referenceNo,
-            @RequestParam(required = false) String remarks,
-            HttpServletRequest request) {
-        consumableService.inbound(id, quantity, referenceNo, remarks, getCurrentUserId(request));
+            @RequestParam(required = false) String remarks) {
+        consumableService.inbound(id, quantity, referenceNo, remarks, getCurrentUserId());
         return Result.ok(null, "Inbound recorded");
     }
 
     @PostMapping("/{id}/outbound")
+    @PreAuthorize("@ss.hasAuthority('consumable:out')")
     @Operation(summary = "Stock outbound", description = "Record outgoing stock (usage, issuance)")
     public Result<Void> outbound(
             @PathVariable Long id,
             @Parameter(description = "Quantity to deduct") @RequestParam Integer quantity,
             @RequestParam(required = false) String referenceNo,
-            @RequestParam(required = false) String remarks,
-            HttpServletRequest request) {
-        consumableService.outbound(id, quantity, referenceNo, remarks, getCurrentUserId(request));
+            @RequestParam(required = false) String remarks) {
+        consumableService.outbound(id, quantity, referenceNo, remarks, getCurrentUserId());
         return Result.ok(null, "Outbound recorded");
     }
 
     @PatchMapping("/{id}/stock")
+    @PreAuthorize("@ss.hasAuthority('consumable:edit')")
     @Operation(summary = "Adjust stock", description = "Manual stock adjustment (positive or negative)")
     public Result<Void> adjustStock(
             @PathVariable Long id,
             @Parameter(description = "Quantity change (+/-)") @RequestParam Integer delta,
             @RequestParam(required = false) String referenceNo,
-            @RequestParam(required = false) String remarks,
-            HttpServletRequest request) {
-        consumableService.adjustStock(id, delta, referenceNo, remarks, getCurrentUserId(request));
+            @RequestParam(required = false) String remarks) {
+        consumableService.adjustStock(id, delta, referenceNo, remarks, getCurrentUserId());
         return Result.ok(null, "Stock adjusted");
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("@ss.hasAuthority('consumable:del')")
     @Operation(summary = "Delete consumable")
     public Result<Void> delete(
-            @PathVariable Long id,
-            HttpServletRequest request) {
-        consumableService.delete(id, getCurrentUserId(request));
+            @PathVariable Long id) {
+        consumableService.delete(id, getCurrentUserId());
         return Result.ok(null, "Consumable deleted");
     }
 
-    private Long getCurrentUserId(HttpServletRequest request) {
-        Object attr = request.getAttribute("userId");
-        if (attr instanceof Long) return (Long) attr;
-        return 1L;
+    private Long getCurrentUserId() {
+        return securityUtils.currentUserId();
     }
 }

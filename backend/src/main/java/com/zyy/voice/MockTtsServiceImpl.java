@@ -69,7 +69,7 @@ public class MockTtsServiceImpl implements TtsService {
     public boolean isMockMode() { return true; }
 
     @Override
-    public String getProviderName() { return "MockTts (氓娄炉芒聞聝氓芦聶TTS茅聰聸氓卤戮忙拢陇Key茅聬聵猫聢碌芒聜卢?"; }
+    public String getProviderName() { return "MockTts (模拟TTS，无Key状态)"; }
 
     private void printMockBroadcast(String text, MockVoice voice,
                                     Double speed, Double volume, Double pitch,

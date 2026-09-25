@@ -7,6 +7,20 @@ on:
     branches: [main]
 
 jobs:
+  # ========== Secret Scan (gitleaks) ==========
+  # fetch-depth: 0 is required — the default shallow checkout hides earlier
+  # commits, and gitleaks then reports historical commits as missing.
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_COMMENTS: "true"
+
   # ========== Python Lint & Smoke Tests ==========
   python-lint:
     runs-on: ubuntu-latest
@@ -31,19 +45,6 @@ jobs:
   # ========== Backend (Spring Boot + Maven) ==========
   backend-build:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: testroot
-          MYSQL_DATABASE: generic_sys_admin_test
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +61,10 @@ jobs:
 
       - name: Run unit tests
         working-directory: backend
-        run: mvn test -B -Dtest=SmokeTest,JwtUtilTest -DfailIfNoTests=false
+        # Previously this pinned -Dtest=SmokeTest,JwtUtilTest, which silently
+        # skipped the rest of the suite (and hid 15 context-load failures).
+        # verify (not test) so the failsafe integration phase runs too.
+        run: mvn verify -B
 
       - name: Package backend
         working-directory: backend
@@ -88,7 +92,9 @@ jobs:
 
       - name: Type check
         working-directory: frontend
-        run: npx vue-tsc --noEmit || echo "Type check completed with warnings"
+        # Was `npx vue-tsc --noEmit || echo ...`, which always exits 0 and hides
+        # type errors. Frontend has no unit test runner, so this is the gate.
+        run: npx vue-tsc --noEmit
 
       - name: Build frontend
         working-directory: frontend

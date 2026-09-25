@@ -14,6 +14,16 @@ spring:
   application:
     name: generic-sys-admin
 
+  # Flyway — schema 版本管理
+  # migration 位于 classpath:db/migration/，与仓库根 sql/ 内容一致
+  # （sql/ 保留为手工执行来源，改这里必须同步改 sql/）。
+  # versioned: V<major>.<minor>__<desc>.sql；Flyway 记录 checksum 且只执行一次。
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
   # Database Configuration
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -47,6 +57,9 @@ spring:
       max-file-size: ${FILE_MAX_SIZE:100MB}
       max-request-size: ${REQUEST_MAX_SIZE:100MB}
 
+# ===================================================================
+# MyBatis-Plus Configuration
+# ===================================================================
 # ===================================================================
 # MyBatis-Plus Configuration
 # ===================================================================
@@ -92,7 +105,9 @@ sys:
   config:
     # Security Configuration (JWT + Password)
     security:
-      jwt-secret: ${JWT_SECRET:dev-secret-do-not-use-in-production-32chars!}
+      # 默认值只出现在 dev profile。prod / 其他 profile 若未设置 JWT_SECRET，
+      # 会因为没有值而启动失败（fail-fast），不会静默使用弱密钥。
+      jwt-secret: ${JWT_SECRET:}
       jwt-expiration: ${JWT_EXPIRATION:7200}
       jwt-refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}
       bcrypt-cost-factor: ${BCRYPT_COST_FACTOR:10}
@@ -146,7 +161,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info
   endpoint:
     health:
       show-details: when-authorized

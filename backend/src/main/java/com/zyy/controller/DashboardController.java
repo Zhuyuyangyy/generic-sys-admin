@@ -31,7 +31,7 @@ public class DashboardController {
      */
     @GetMapping("/stats")
     @Operation(summary = "首页统计聚合", description = "返回设备/耗材/用户统计及操作日志趋势")
-    @PreAuthorize("hasAuthority('dashboard:view')")
+    @PreAuthorize("@ss.hasAuthority('dashboard:view')")
     public Result<DashboardStatsVO> getStats() {
         log.debug("Dashboard stats requested");
         return Result.ok(dashboardService.getStats());

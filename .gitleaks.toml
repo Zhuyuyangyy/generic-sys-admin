@@ -1,0 +1,38 @@
+# Gitleaks configuration
+#
+# Scope: allow known non-secrets so the CI gate is meaningful.
+# Everything listed here is a placeholder or a documented dev default,
+# never a live credential.
+
+title = "generic-sys-admin gitleaks config"
+
+[extend]
+useDefault = true
+
+# Documented dev-only placeholder values.
+[[allowlists]]
+description = "Documented dev-only placeholders"
+regexTarget = "match"
+regexes = [
+  "dev-secret-do-not-use-in-production-32chars!",
+  "minioadmin",
+  "testroot",
+  "please-change-me",
+]
+
+# Files that intentionally show placeholders.
+[[allowlists]]
+description = "Example and documentation files"
+paths = [
+  "\.env\.example$",
+  "^docs/",
+  "README\\.md$",
+  "REPRODUCE\\.md$",
+]
+
+# Test fixtures and experiments that use fake credentials.
+[[allowlists]]
+description = "Test fixtures and experiments"
+paths = [
+  "^backend/src/test/",
+]

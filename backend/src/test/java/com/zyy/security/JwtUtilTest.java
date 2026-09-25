@@ -110,4 +110,59 @@ class JwtUtilTest {
         assertEquals(original, refreshed);
         assertTrue(jwtUtil.validate(refreshed));
     }
+    // ==================== fail-fast：弱/缺失 secret 必须拒绝启动 ====================
+
+    private JwtUtil jwtUtilWithSecret(String secret) throws Exception {
+        JwtUtil util = new JwtUtil();
+        var appProps = new com.zyy.config.AppProperties();
+        appProps.getSecurity().setJwtSecret(secret);
+        var field = JwtUtil.class.getDeclaredField("appProperties");
+        field.setAccessible(true);
+        field.set(util, appProps);
+        return util;
+    }
+
+    private void assertInitFails(String secret) {
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
+            try {
+                var m = JwtUtil.class.getDeclaredMethod("afterPropertiesSet");
+                m.setAccessible(true);
+                m.invoke(jwtUtilWithSecret(secret));
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                throw (IllegalStateException) e.getCause();
+            }
+        });
+        assertTrue(ex.getMessage().contains("JWT_SECRET"), "错误信息应指向 JWT_SECRET");
+    }
+
+    @Test
+    @DisplayName("JWT_SECRET 缺失时必须启动失败")
+    void blankSecretFailsFast() {
+        assertInitFails(null);
+        assertInitFails("");
+        assertInitFails("   ");
+    }
+
+    @Test
+    @DisplayName("使用占位默认 secret 时必须启动失败（防止静默进入生产）")
+    void knownWeakSecretFailsFast() {
+        assertInitFails("dev-secret-do-not-use-in-production-32chars!");
+        assertInitFails("123456");
+        assertInitFails("please-change-me");
+        assertInitFails("secret");
+    }
+
+    @Test
+    @DisplayName("合法 secret 正常初始化")
+    void strongSecretInitialises() throws Exception {
+        var m = JwtUtil.class.getDeclaredMethod("afterPropertiesSet");
+        m.setAccessible(true);
+        assertDoesNotThrow(() -> {
+            try {
+                m.invoke(jwtUtilWithSecret("another-strong-secret-at-least-32-characters!"));
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                throw new RuntimeException(e.getCause());
+            }
+        });
+    }
 }
