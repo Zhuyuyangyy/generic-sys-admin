@@ -7,7 +7,8 @@
 [extend]
 useDefault = true
 
-# Documented dev-only placeholder values.
+# Documented dev-only placeholder values, matched against the whole finding so
+# that "secret-key: minioadmin" and "access-key: minioadmin" both hit.
 [[allowlists]]
 description = "Documented dev-only placeholders"
 regexTarget = "match"
@@ -16,17 +17,23 @@ regexes = [
   "minioadmin",
   "testroot",
   "please-change-me",
+  "DB_PASSWORD:1234",
+  "dev-secret-do-not-use",
 ]
 
-# Files that intentionally show placeholders.
+# Files that intentionally show placeholders. application-dev.yml is the dev
+# profile and every credential in it is an explicit placeholder that production
+# must override; gitleaks' generic-api-key rule matches the surrounding YAML
+# context, so allowing the values alone is not enough.
 [[allowlists]]
-description = "Example, docs and test resources"
+description = "Example, docs, tests and the dev profile"
 paths = [
   "^\\.env\\.example$",
   "^docs/",
   "README\\.md$",
   "REPRODUCE\\.md$",
   "^backend/src/test/",
+  "^backend/src/main/resources/application-dev\\.yml$",
 ]
 
 # Local run logs: ignored by .gitignore now, but guard against a re-add.

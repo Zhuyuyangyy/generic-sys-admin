@@ -76,7 +76,7 @@ jobs:
       - name: Verify migrations are inside the JAR
         working-directory: backend
         run: |
-          jar tf target/*.jar | grep -E "db/migration/v[0-9]" || {
+          jar tf target/*.jar | grep -E "db/migration/V[0-9]" || {
             echo "Flyway migrations missing from the JAR"; exit 1; }
 
   # ========== Frontend (Vue 3 + Vite) ==========
