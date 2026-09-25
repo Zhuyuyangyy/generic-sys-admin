@@ -2,8 +2,10 @@
 backend/src/main/resources/.env
 backend/src/main/resources/application-dev.yml
 
-# Log files
+# Log files — cover rotated archives too: *.log.gz was tracked before and
+# carried the Spring Security generated password from every local startup.
 *.log
+*.log.*
 *.tmp
 *.swp
 *~

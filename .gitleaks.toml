@@ -1,10 +1,8 @@
-# Gitleaks configuration
+# Gitleaks configuration.
 #
-# Scope: allow known non-secrets so the CI gate is meaningful.
-# Everything listed here is a placeholder or a documented dev default,
-# never a live credential.
-
-title = "generic-sys-admin gitleaks config"
+# The CI action passes this file via GITLEAKS_CONFIG. Without it gitleaks falls
+# back to its built-in rules, which flag the Spring Security generated password
+# that every local startup prints into backend/logs/.
 
 [extend]
 useDefault = true
@@ -22,17 +20,21 @@ regexes = [
 
 # Files that intentionally show placeholders.
 [[allowlists]]
-description = "Example and documentation files"
+description = "Example, docs and test resources"
 paths = [
-  "\.env\.example$",
+  "^\\.env\\.example$",
   "^docs/",
   "README\\.md$",
   "REPRODUCE\\.md$",
+  "^backend/src/test/",
 ]
 
-# Test fixtures and experiments that use fake credentials.
+# Local run logs: ignored by .gitignore now, but guard against a re-add.
 [[allowlists]]
-description = "Test fixtures and experiments"
+description = "Local run logs"
 paths = [
-  "^backend/src/test/",
+  "logs/",
+  "\\.log$",
+  "\\.log\\.[0-9]+",
+  "\\.gz$",
 ]

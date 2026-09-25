@@ -22,6 +22,10 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITLEAKS_ENABLE_COMMENTS: "true"
+          # The action does not pick up .gitleaks.toml unless told to; without
+          # it gitleaks uses its built-in rules and flags Spring Security's
+          # generated dev password that lands in local log files.
+          GITLEAKS_CONFIG: .gitleaks.toml
 
   # ========== Python Lint & Smoke Tests ==========
   python-lint:

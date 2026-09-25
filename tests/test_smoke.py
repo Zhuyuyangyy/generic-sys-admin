@@ -17,9 +17,9 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SQL baseline files that must exist after the graduation-material cleanup.
 EXPECTED_SQL = [
-    "backend/src/main/resources/db/migration/v1.0__init.sql",
-    "backend/src/main/resources/db/migration/v1.1__operation_log.sql",
-    "backend/src/main/resources/db/migration/v1.2__rbac_schema_completion.sql",
+    "backend/src/main/resources/db/migration/V1.0__init.sql",
+    "backend/src/main/resources/db/migration/V1.1__operation_log.sql",
+    "backend/src/main/resources/db/migration/V1.2__rbac_schema_completion.sql",
 ]
 
 

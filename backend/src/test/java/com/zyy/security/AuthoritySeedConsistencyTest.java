@@ -39,7 +39,7 @@ class AuthoritySeedConsistencyTest {
     private static final Path CONTROLLER_DIR =
             MODULE_ROOT.resolve("src/main/java/com/zyy/controller");
     private static final Path MIGRATION =
-            MODULE_ROOT.resolve("src/main/resources/db/migration/v1.2__rbac_schema_completion.sql");
+            MODULE_ROOT.resolve("src/main/resources/db/migration/V1.2__rbac_schema_completion.sql");
 
     /** Every authority the controllers ask for. */
     private static Set<String> authoritiesInControllers() throws IOException {
