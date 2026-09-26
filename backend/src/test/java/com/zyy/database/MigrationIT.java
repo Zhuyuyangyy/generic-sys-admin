@@ -46,7 +46,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * 会真正执行本类。</p>
  */
 @Testcontainers(disabledWithoutDocker = true)
-@SpringBootTest
+// 启动类在 com.zyy.bootstrap，不在本测试所在包的父包，
+// @SpringBootTest 默认向上搜索会找不到，必须显式指定。
+@SpringBootTest(classes = com.zyy.bootstrap.GenericSysAdminApplication.class)
 @DisplayName("MigrationIT：真实 MySQL 上的 V1–V10")
 class MigrationIT {
 
