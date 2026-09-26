@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author Alice 🌸
  */
-@SpringBootTest(
+@SpringBootTest(classes = com.zyy.bootstrap.GenericSysAdminApplication.class, 
     properties = {
         // ===== TTS Mock 配置 =====
         "tts.provider=mock",
@@ -57,6 +57,11 @@ import static org.junit.jupiter.api.Assertions.*;
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL",
         "spring.sql.init.mode=never",
+        // 本测试只验证 Bean 装配与降级路径（TTS mock / MinIO 不可用 / 本地存储），
+        // 不需要 schema。V1–V9 migration 是 MySQL 方言写的（索引名大小写、ENGINE=
+        // InnoDB 等），H2 上执行会失败，而失败发生在 flywayInitializer，
+        // 直接让整个 ApplicationContext 起不来。
+        "spring.flyway.enabled=false",
         "mybatis-plus.mapper-locations=",  // 不扫描 XML
         "minio.endpoint=http://localhost:99999",  // 故意设成无效地址
         "minio.bucket-name=test-bucket",

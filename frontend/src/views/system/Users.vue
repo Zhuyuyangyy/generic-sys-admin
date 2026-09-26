@@ -31,7 +31,8 @@
               :model-value="row.status === 1"
               active-text="启用"
               inactive-text="禁用"
-              @change="(val: boolean) => handleToggleStatus(row, val)"
+              :active-value="1" :inactive-value="0"
+              @change="(val: string | number | boolean) => handleToggleStatus(row, val === 1 || val === true)"
               style="margin-left: 8px;"
             />
           </template>

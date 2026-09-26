@@ -70,7 +70,7 @@ class SysUserServiceTest {
         testUser.setFailedAttempts(0);
         testUser.setLockedUntil(null);
 
-        userService = new SysUserServiceImpl(userMapper, appProperties, jwtUtil, rbacService);
+        userService = new SysUserServiceImpl(userMapper, appProperties, jwtUtil);
 
         Field encoderField = SysUserServiceImpl.class.getDeclaredField("passwordEncoder");
         encoderField.setAccessible(true);

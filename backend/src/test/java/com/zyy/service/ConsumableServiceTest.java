@@ -38,6 +38,9 @@ class ConsumableServiceTest {
     @Mock
     private InventoryTransactionMapper transactionMapper;
 
+    @Mock
+    private com.zyy.inventory.service.StockAlertService stockAlertService;
+
     @InjectMocks
     private ConsumableServiceImpl consumableService;
 

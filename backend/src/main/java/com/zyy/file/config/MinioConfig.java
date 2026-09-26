@@ -49,15 +49,31 @@ public class MinioConfig {
 
     @Bean
     public MinioClient minioClient() {
-        log.info("[MinIO] Initializing MinIO client | Endpoint: {}", endpoint);
+        // endpoint 可能是刻意不可达的（测试、未部署 MinIO 的开发机）。
+        // MinioClient.builder().endpoint() 对畸形/不可路由地址直接抛异常，
+        // 会中断整个 ApplicationContext。MinioUtil 以 @Autowired(required=false)
+        // 注入本 bean，并按 availability 降级到本地存储，因此返回 null
+        // 就是既有的"存储不可用"信号。
+        if (endpoint == null || endpoint.isBlank()) {
+            log.warn("[MinIO] 未配置 endpoint，降级为本地存储");
+            availability.setAvailable(false, "No endpoint configured");
+            return null;
+        }
+        try {
+            log.info("[MinIO] Initializing MinIO client | Endpoint: {}", endpoint);
 
-        MinioClient client = MinioClient.builder()
-            .endpoint(endpoint)
-            .credentials(accessKey, secretKey)
-            .build();
+            MinioClient client = MinioClient.builder()
+                .endpoint(endpoint)
+                .credentials(accessKey, secretKey)
+                .build();
 
-        log.info("[MinIO] MinioClient bean created successfully");
-        return client;
+            log.info("[MinIO] MinioClient bean created successfully");
+            return client;
+        } catch (Exception e) {
+            log.warn("[MinIO] endpoint 无效 [{}]，降级为本地存储: {}", endpoint, e.getMessage());
+            availability.setAvailable(false, e.getMessage());
+            return null;
+        }
     }
 
     // ==================== Bucket Initialization ====================

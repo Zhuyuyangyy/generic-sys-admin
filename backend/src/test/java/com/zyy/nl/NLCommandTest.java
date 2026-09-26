@@ -18,7 +18,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(classes = com.zyy.bootstrap.GenericSysAdminApplication.class)
 @ActiveProfiles("test")
 @DisplayName("NL Copilot Test Suite - Dry Run & Risk Guard")
 class NLCommandTest {

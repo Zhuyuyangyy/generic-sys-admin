@@ -9,6 +9,7 @@ import com.zyy.common.TenantContext;
 import com.zyy.security.DataScopeFilter;
 import org.apache.ibatis.reflection.MetaObject;
 import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,8 +37,18 @@ public class MyBatisPlusConfig {
     @Autowired
     private TenantLineInnerInterceptor tenantLineInnerInterceptor;
 
+    /**
+     * DataScopeFilter 依赖 DataScopeMapper，而 mapper 又需要 sqlSessionFactory，
+     * sqlSessionFactory 的构建又依赖本配置的 mybatisPlusInterceptor —— 直接
+     * @Autowired 会形成 Spring Boot 2.6+ 默认禁止的循环引用，启动即
+     * BeanCurrentlyInCreationException。
+     *
+     * ObjectProvider 把取值推迟到拦截器真正执行 SQL 时，那时容器已就绪。
+     * 不用 spring.main.allow-circular-references=true：那会掩盖真实的
+     * 初始化顺序问题。
+     */
     @Autowired
-    private DataScopeFilter dataScopeFilter;
+    private ObjectProvider<DataScopeFilter> dataScopeFilterProvider;
 
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
@@ -46,7 +57,10 @@ public class MyBatisPlusConfig {
         interceptor.addInnerInterceptor(tenantLineInnerInterceptor);
         // Data permission interceptor (ABAC data scope filtering)
         DataPermissionInterceptor dataPermissionInterceptor = new DataPermissionInterceptor();
-        dataPermissionInterceptor.setDataPermissionHandler(dataScopeFilter);
+        // 每次执行都从 provider 取，确保拿到已完全初始化的实例
+        dataPermissionInterceptor.setDataPermissionHandler(
+                (where, mappedStatementId) ->
+                        dataScopeFilterProvider.getObject().getSqlSegment(where, mappedStatementId));
         interceptor.addInnerInterceptor(dataPermissionInterceptor);
         // Pagination interceptor
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor());

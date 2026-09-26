@@ -181,7 +181,7 @@ public class DataScopeFilter implements DataPermissionHandler {
             expressions.add(new net.sf.jsqlparser.expression.LongValue(deptId));
         }
         expressionList.setExpressions(expressions);
-        inExpression.setRightExpression(expressionList);
+        inExpression.setRightExpression((Expression) expressionList);
 
         return inExpression;
     }
@@ -210,7 +210,7 @@ public class DataScopeFilter implements DataPermissionHandler {
                             expressions.add(new net.sf.jsqlparser.expression.LongValue(deptId));
                         }
                         expressionList.setExpressions(expressions);
-                        inExpression.setRightExpression(expressionList);
+                        inExpression.setRightExpression((Expression) expressionList);
                         return inExpression;
                     }
                 } catch (Exception e) {
