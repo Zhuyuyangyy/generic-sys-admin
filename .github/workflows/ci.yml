@@ -34,8 +34,11 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('backend/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Run tests
-        run: mvn clean test -B
+      # verify（而不是 test）让 failsafe 阶段也执行：MigrationIT 会拉起真实
+      # MySQL 8.0 容器，用 Spring Boot 的 Flyway 配置从空库跑完 V1–V10，
+      # 并校验 schema / seed / 关键 mapper。
+      - name: Run tests + integration tests
+        run: mvn clean verify -B
 
       - name: Upload test results
         if: always()
