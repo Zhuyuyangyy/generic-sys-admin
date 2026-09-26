@@ -119,3 +119,35 @@ reporting this key on any branch that can reach `a6d09be`. That is the scanner
 being correct, not a CI defect. Do not silence it with an allowlist for this
 key; if it must be temporarily scoped, narrow the scan to the PR's commits and
 say so explicitly.
+
+## CI impact observed on run 36214323191
+
+```
+REMOTE CI BLOCKED BY KNOWN HISTORICAL SECRET
+```
+
+The Secret Scan job failed on `stabilize-from-master` PR #3. The gitleaks
+action v2 derives its commit range from the PR base (`<base>^..<head>` with
+`--first-parent`). This branch's base commit is not on the branch's first-parent
+chain, so the range resolves to empty and gitleaks exits 1 after
+`scanned ~0 bytes`:
+
+```
+gitleaks cmd: gitleaks detect --redact -v --exit-code=2 --log-opts=--no-merges
+              --first-parent 65043bc^..05e7e68
+WRN  scanned ~0 bytes (0)
+WRN  no leaks found in partial scan
+##[error]ERROR: Unexpected exit code [1]
+```
+
+That exit 1 is "nothing to scan", not "a secret was found" — the SARIF artifact
+in that run contains 0 findings. The job name is misleading.
+
+Any range that *does* cover the two historical commits will legitimately report
+the MiniMax key, because `a6d09be` is an ancestor of this branch. Widenning the
+scan with `GITLEAKS_LOG_OPTS: --all` therefore trades a false failure for a real
+one, and has deliberately not been done. No allowlist and no
+`continue-on-error` was added either.
+
+This is recorded rather than papered over. Resolving it needs one of the two
+options above, both of which are owner decisions.
