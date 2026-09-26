@@ -27,6 +27,15 @@
         <springdoc.version>2.3.0</springdoc.version>
         <easyexcel.version>3.3.2</easyexcel.version>
         <freemarker.version>2.3.32</freemarker.version>
+        <!-- Spring Boot 3.2 manages Lombok 1.18.30, whose annotation processor
+             does not run on JDK 21+ — every @Slf4j/@Data/@Builder accessor goes
+             missing and the build fails with hundreds of "cannot find symbol".
+             1.18.46 supports the current JDK. -->
+        <lombok.version>1.18.46</lombok.version>
+        <!-- Spring Boot 3.2 锁定的 Byte Buddy 1.14.x 不支持 JDK 24，Mockito 会在
+             modify classes 阶段抛 "Java 24 (68) is not supported"。 -->
+        <byte-buddy.version>1.15.11</byte-buddy.version>
+        <mockito.version>5.14.2</mockito.version>
     </properties>
 
     <dependencies>
@@ -117,6 +126,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
 
@@ -195,6 +205,19 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

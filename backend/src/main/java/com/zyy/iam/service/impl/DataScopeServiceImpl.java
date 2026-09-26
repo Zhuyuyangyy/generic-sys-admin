@@ -62,6 +62,12 @@ public class DataScopeServiceImpl implements DataScopeService {
         log.info("Data scope set - roleCode={}, scopeType={}", roleCode, scopeType);
     }
 
+
+    /** 把 id 列表拼成 IN (...) 占位内容，配合 apply("{ids}") 使用。 */
+    private static String mkIds(List<Long> ids) {
+        return ids.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(","));
+    }
+
     @Override
     public <T> LambdaQueryWrapper<T> filterByScope(LambdaQueryWrapper<T> queryWrapper,
                                                     Long userId,
@@ -78,7 +84,7 @@ public class DataScopeServiceImpl implements DataScopeService {
                 break;
 
             case "SELF":
-                queryWrapper.eq("create_user", userId);
+                queryWrapper.apply("create_user = {0}", userId);
                 break;
 
             case "DEPARTMENT":
@@ -86,13 +92,14 @@ public class DataScopeServiceImpl implements DataScopeService {
                     List<Long> deptIds = departmentMapper.selectChildDeptIds(departmentId,
                             tenantId != null ? tenantId : 1L);
                     if (!deptIds.isEmpty()) {
-                        queryWrapper.in("department_id", deptIds);
+                        queryWrapper.apply("department_id IN ({ids})",
+                        mkIds(deptIds));
                     } else {
-                        queryWrapper.eq("department_id", departmentId);
+                        queryWrapper.apply("department_id = {0}", departmentId);
                     }
                 } else {
                     // Fallback to SELF if no department
-                    queryWrapper.eq("create_user", userId);
+                    queryWrapper.apply("create_user = {0}", userId);
                 }
                 break;
 
@@ -101,12 +108,13 @@ public class DataScopeServiceImpl implements DataScopeService {
                     List<Long> allDeptIds = departmentMapper.selectAllDescendantDeptIds(departmentId,
                             tenantId != null ? tenantId : 1L);
                     if (!allDeptIds.isEmpty()) {
-                        queryWrapper.in("department_id", allDeptIds);
+                        queryWrapper.apply("department_id IN ({ids})",
+                        mkIds(allDeptIds));
                     } else {
-                        queryWrapper.eq("department_id", departmentId);
+                        queryWrapper.apply("department_id = {0}", departmentId);
                     }
                 } else {
-                    queryWrapper.eq("create_user", userId);
+                    queryWrapper.apply("create_user = {0}", userId);
                 }
                 break;
 
@@ -117,22 +125,23 @@ public class DataScopeServiceImpl implements DataScopeService {
                         List<Long> customDeptIds = objectMapper.readValue(customScope,
                                 new TypeReference<List<Long>>() {});
                         if (!customDeptIds.isEmpty()) {
-                            queryWrapper.in("department_id", customDeptIds);
+                            queryWrapper.apply("department_id IN ({ids})",
+                        mkIds(customDeptIds));
                         } else {
-                            queryWrapper.eq("create_user", userId);
+                            queryWrapper.apply("create_user = {0}", userId);
                         }
                     } catch (Exception e) {
                         log.warn("Failed to parse custom scope: {}", customScope, e);
-                        queryWrapper.eq("create_user", userId);
+                        queryWrapper.apply("create_user = {0}", userId);
                     }
                 } else {
-                    queryWrapper.eq("create_user", userId);
+                    queryWrapper.apply("create_user = {0}", userId);
                 }
                 break;
 
             default:
                 // Default to SELF
-                queryWrapper.eq("create_user", userId);
+                queryWrapper.apply("create_user = {0}", userId);
                 break;
         }
 

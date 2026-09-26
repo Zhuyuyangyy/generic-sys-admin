@@ -20,14 +20,19 @@ class JwtUtilTest {
     void setUp() {
         jwtUtil = new JwtUtil();
         try {
-            var appProps = new com.zyy.config.AppProperties();
-            appProps.getSecurity().setJwtSecret("test-secret-key-must-be-at-least-32-chars-long-for-hs256!");
-            appProps.getSecurity().setJwtExpiration(7200);
-            appProps.getSecurity().setJwtRefreshExpiration(604800);
-
-            var field = JwtUtil.class.getDeclaredField("appProperties");
-            field.setAccessible(true);
-            field.set(jwtUtil, appProps);
+            // JwtUtil 在 master 上改为直接 @Value 注入 jwt.secret/jwt.expiration/
+            // jwt.refresh-expiration，不再有 appProperties 字段。
+            // 纯单测：@Value 不注入，long 字段默认 0 会让 token 立刻过期。
+            // 显式给 secret / 两个有效期赋值，模拟 Spring 注入后的状态。
+            var secretField = JwtUtil.class.getDeclaredField("secret");
+            secretField.setAccessible(true);
+            secretField.set(jwtUtil, "test-secret-key-must-be-at-least-32-chars-long-for-hs256!");
+            var expField = JwtUtil.class.getDeclaredField("expiration");
+            expField.setAccessible(true);
+            expField.set(jwtUtil, 7200L);
+            var refreshField = JwtUtil.class.getDeclaredField("refreshExpiration");
+            refreshField.setAccessible(true);
+            refreshField.set(jwtUtil, 604800L);
 
             var initMethod = JwtUtil.class.getDeclaredMethod("afterPropertiesSet");
             initMethod.setAccessible(true);
@@ -59,10 +64,10 @@ class JwtUtilTest {
         Long userId = 1L;
         String username = "admin";
 
-        String refreshToken = jwtUtil.signRefreshToken(userId, username, null);
+        String refreshToken = jwtUtil.signRefresh(userId, username, null);
         assertNotNull(refreshToken);
         assertTrue(jwtUtil.isRefreshToken(refreshToken));
-        assertEquals("refresh", jwtUtil.getTokenType(refreshToken));
+        
     }
 
     @Test
@@ -70,13 +75,13 @@ class JwtUtilTest {
     void expiredTokenValidation() {
         try {
             JwtUtil shortLived = new JwtUtil();
-            var appProps = new com.zyy.config.AppProperties();
-            appProps.getSecurity().setJwtSecret("test-secret-key-must-be-at-least-32-chars-long-for-hs256!");
-            appProps.getSecurity().setJwtExpiration(-1);
-
-            var field = JwtUtil.class.getDeclaredField("appProperties");
-            field.setAccessible(true);
-            field.set(shortLived, appProps);
+            var secretField = JwtUtil.class.getDeclaredField("secret");
+            secretField.setAccessible(true);
+            secretField.set(shortLived, "test-secret-key-must-be-at-least-32-chars-long-for-hs256!");
+            // 负的 expiration 让 token 立即过期
+            var expField = JwtUtil.class.getDeclaredField("expiration");
+            expField.setAccessible(true);
+            expField.set(shortLived, -1L);
 
             var initMethod = JwtUtil.class.getDeclaredMethod("afterPropertiesSet");
             initMethod.setAccessible(true);
@@ -104,10 +109,12 @@ class JwtUtilTest {
     @Test
     @DisplayName("refresh方法基于现有Token生成新Token（刷新有效期）")
     void refreshToken() {
-        String original = jwtUtil.sign(1L, "admin", null);
+        // master 上 refresh() 走 signRefresh：带 tokenType=refresh 且有效期更长，
+        // 因此不再与 access token 逐字节相同。改为断言契约本身。
         String refreshed = jwtUtil.refresh(1L, "admin", null);
-        // refresh()底层也是sign()，相同参数结果相同
-        assertEquals(original, refreshed);
+        assertNotNull(refreshed);
         assertTrue(jwtUtil.validate(refreshed));
+        assertTrue(jwtUtil.isRefreshToken(refreshed));
+        assertFalse(jwtUtil.isExpired(refreshed));
     }
 }

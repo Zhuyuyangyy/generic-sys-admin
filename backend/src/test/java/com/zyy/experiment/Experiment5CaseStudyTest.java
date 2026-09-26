@@ -13,7 +13,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -26,14 +26,17 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.*;
 
-@SpringBootTest(
+@SpringBootTest(classes = com.zyy.bootstrap.GenericSysAdminApplication.class, 
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
         "spring.redis.enabled=false",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL",
         "spring.sql.init.mode=never",
+        // 实验测试只跑 NL/Causal 逻辑，不需要 schema；V1–V9 是 MySQL 方言，
+        // 在 H2 上执行会失败并让容器起不来。
         "mybatis-plus.mapper-locations=",
+        "spring.flyway.enabled=false",
         "storage.provider=local",
         "minio.endpoint=localhost:99999",
         "minio.bucket-name=test",
@@ -48,7 +51,7 @@ public class Experiment5CaseStudyTest {
     @LocalServerPort
     private int port;
 
-    @MockitoBean
+    @MockBean
     private MinioClient minioClient;
 
     private static final ObjectMapper mapper = new ObjectMapper();

@@ -5,6 +5,7 @@ import com.zyy.nl.NLIntent;
 import com.zyy.nl.NLParser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +32,7 @@ public class Experiment4LLMBaselineTest {
                   long llmLatencyMs) {}
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
     @DisplayName("运行DeepSeek V4 Flash对比实验")
     void runExperiment() throws IOException {
         List<TestCase> cases = buildAllTestCases();

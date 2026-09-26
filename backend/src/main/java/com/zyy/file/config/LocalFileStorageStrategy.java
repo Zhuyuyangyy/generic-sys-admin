@@ -109,10 +109,26 @@ public class LocalFileStorageStrategy {
 
 
 
-    @Value("${storage.local.base-dir:#{user.home}}")
+    /**
+     * 本地存储根目录。默认取 user.home。
+     *
+     * 原来写 #{user.home} —— @Value 在 bean 属性上解析该 SpEL 会抛
+     * EL1008E "Property or field 'user' cannot be found on
+     * BeanExpressionContext"，导致整个容器启动失败（Boot 3.2 起更严格）。
+     * 现在用 ${user.home} 属性占位符，Spring 会解析它；仍为空时由
+     * PostConstruct 兜底。
+     */
+    @Value("${storage.local.base-dir:${user.home}}")
 
 
     private String baseDir;
+
+    @jakarta.annotation.PostConstruct
+    private void ensureBaseDir() {
+        if (baseDir == null || baseDir.isBlank()) {
+            baseDir = System.getProperty("user.home", System.getProperty("java.io.tmpdir"));
+        }
+    }
 
 
 

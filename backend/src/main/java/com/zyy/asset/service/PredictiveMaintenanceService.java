@@ -163,7 +163,9 @@ public class PredictiveMaintenanceService {
                 .in(MaintenancePlanEntity::getPlanType, "EMERGENCY", "CORRECTIVE")
                 .ge(MaintenancePlanEntity::getCreateTime, LocalDateTime.now().minusDays(180));
 
-        return (int) maintenancePlanMapper.selectCount(wrapper);
+        // MyBatis-Plus 3.5.x 的 selectCount 返回 Long；不要强转 int。
+        Long count = maintenancePlanMapper.selectCount(wrapper);
+        return count == null ? 0 : count.intValue();
     }
 
     /**

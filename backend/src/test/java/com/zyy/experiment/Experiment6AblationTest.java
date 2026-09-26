@@ -2,6 +2,7 @@ package com.zyy.experiment;
 
 import com.zyy.nl.CausalDAGService;
 import com.zyy.nl.NLIntent;
+import com.zyy.nl.ExecuteResult;
 import com.zyy.nl.NLService;
 import io.minio.MinioClient;
 import org.junit.jupiter.api.*;
@@ -14,7 +15,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,14 +23,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-@SpringBootTest(
+@SpringBootTest(classes = com.zyy.bootstrap.GenericSysAdminApplication.class, 
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
         "spring.redis.enabled=false",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL",
         "spring.sql.init.mode=never",
+        // 实验测试只跑 NL/Causal 逻辑，不需要 schema；V1–V9 是 MySQL 方言，
+        // 在 H2 上执行会失败并让容器起不来。
         "mybatis-plus.mapper-locations=",
+        "spring.flyway.enabled=false",
         "storage.provider=local",
         "minio.endpoint=localhost:99999",
         "minio.bucket-name=test",
@@ -47,7 +51,7 @@ public class Experiment6AblationTest {
     @Autowired
     private CausalDAGService causalDAGService;
 
-    @MockitoBean
+    @MockBean
     private MinioClient minioClient;
 
     @TestConfiguration
@@ -246,7 +250,7 @@ public class Experiment6AblationTest {
 
         for (TestCase tc : testCases) {
             long start = System.nanoTime();
-            NLService.CausalCheckResult result = nlService.executeWithCausalCheck(tc.input);
+            ExecuteResult result = nlService.executeWithCausalCheck(tc.input);
             long elapsedNs = System.nanoTime() - start;
             totalLatencyNs += elapsedNs;
 
@@ -265,7 +269,7 @@ public class Experiment6AblationTest {
                 overallCorrect++;
             }
 
-            if (result.hasHighImpact()) {
+            if (result.isHasHighImpact()) {
                 impactWarnings++;
             }
         }

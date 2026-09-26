@@ -1,0 +1,50 @@
+wing: generic_sys_admin
+rooms:
+- name: "ai_\u6BD5\u8BBE\u4F18\u5316\u5305"
+  description: "Files from ai_\u6BD5\u8BBE\u4F18\u5316\u5305/"
+  keywords:
+  - "ai_\u6BD5\u8BBE\u4F18\u5316\u5305"
+  - "ai_\u6BD5\u8BBE\u4F18\u5316\u5305"
+- name: backend
+  description: Files from backend/
+  keywords:
+  - backend
+  - backend
+- name: documentation
+  description: Files from doc/
+  keywords:
+  - documentation
+  - doc
+- name: frontend
+  description: Files from frontend/
+  keywords:
+  - frontend
+  - frontend
+- name: logs
+  description: Files from logs/
+  keywords:
+  - logs
+  - logs
+- name: sql
+  description: Files from sql/
+  keywords:
+  - sql
+  - sql
+- name: target
+  description: Files from target/
+  keywords:
+  - target
+  - target
+- name: "\u7B54\u8FA9\u8D44\u6599"
+  description: "Files from \u7B54\u8FA9\u8D44\u6599/"
+  keywords:
+  - "\u7B54\u8FA9\u8D44\u6599"
+  - "\u7B54\u8FA9\u8D44\u6599"
+- name: configuration
+  description: Files from deploy/
+  keywords:
+  - configuration
+  - deploy
+- name: general
+  description: Files that don't fit other rooms
+  keywords: []

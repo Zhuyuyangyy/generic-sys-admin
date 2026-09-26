@@ -43,6 +43,16 @@ jwt:
   expiration: 7200
   refresh-expiration: 604800
 
+# 顶层 minio.* 是 MinioConfig 直接读取的属性；test profile 之前只定义了
+# sys.config.storage.*，导致 MinioConfig 启动即
+# "Could not resolve placeholder 'minio.endpoint'"。
+# endpoint 用一个刻意不可路由的地址，让 MinioConfig 走本地存储降级。
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:99999}
+  access-key: ${MINIO_ACCESS_KEY:test}
+  secret-key: ${MINIO_SECRET_KEY:test}
+  bucket-name: ${MINIO_BUCKET:test-bucket}
+
 minimax:
   api-url: https://api.minimax.chat
   app-id: ""
